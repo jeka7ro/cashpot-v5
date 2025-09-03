@@ -598,6 +598,8 @@ async def get_user_accessible_locations(user: User) -> List[str]:
     """Get list of location IDs that user has access to"""
     if user.role == UserRole.ADMIN:
         # Admin sees all locations
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         locations = await db.locations.find({}).to_list(1000)
         return [loc["id"] for loc in locations]
     else:
@@ -611,6 +613,8 @@ async def get_user_accessible_companies(user: User) -> List[str]:
     """Get list of company IDs that user has access to through locations"""
     if user.role == UserRole.ADMIN:
         # Admin sees all companies
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         companies = await db.companies.find({}).to_list(1000)
         return [comp["id"] for comp in companies]
     else:
@@ -623,6 +627,8 @@ async def get_user_accessible_companies(user: User) -> List[str]:
         if not accessible_locations:
             return []  # No accessible locations = no accessible companies
         
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         locations = await db.locations.find({"id": {"$in": accessible_locations}}).to_list(1000)
         company_ids = list(set([loc["company_id"] for loc in locations if "company_id" in loc]))
         return company_ids
@@ -648,11 +654,15 @@ async def filter_by_user_access(user: User, query: dict, entity_type: str) -> di
             accessible_locations = await get_user_accessible_locations(user)
             if entity_type == "providers":
                 # Get providers used in accessible cabinets
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 cabinets = await db.cabinets.find({"location_id": {"$in": accessible_locations}}).to_list(1000)
                 provider_ids = list(set([cab["provider_id"] for cab in cabinets if "provider_id" in cab]))
                 query["id"] = {"$in": provider_ids}
             elif entity_type == "game_mixes":
                 # Get game mixes used in accessible slot machines
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 slot_machines = await db.slot_machines.find({}).to_list(1000)
                 accessible_slots = []
                 for slot in slot_machines:
@@ -708,6 +718,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
         
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         user = await db.users.find_one({"id": user_id})
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
@@ -731,6 +743,8 @@ async def geocode_address(address: str, city: str, country: str = "Romania"):
 @api_router.post("/auth/register", response_model=dict)
 async def register(user_data: UserCreate):
     # Check if user already exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_user = await db.users.find_one({"$or": [{"username": user_data.username}, {"email": user_data.email}]})
     if existing_user:
         raise HTTPException(status_code=400, detail="Username or email already registered")
@@ -744,6 +758,8 @@ async def register(user_data: UserCreate):
         from pydantic import parse_obj_as
         user_dict["permissions"] = UserPermissions().model_dump()
     user_obj = User(**user_dict)
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.users.insert_one(user_obj.model_dump())
     
     return {"message": "User created successfully", "user_id": user_obj.id}
@@ -754,6 +770,8 @@ async def login(user_data: UserLogin):
     print(f"🔍 Password received: '{user_data.password}' (length: {len(user_data.password)})")
     print(f"🔍 Password type: {type(user_data.password)}")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     user = await db.users.find_one({"username": user_data.username})
     print(f"👤 User found: {user is not None}")
     
