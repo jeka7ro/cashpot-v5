@@ -1048,6 +1048,8 @@ async def bulk_delete_locations(location_ids: List[str], current_user: User = De
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Verify all locations exist
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     locations = await db.locations.find({"id": {"$in": location_ids}}).to_list(1000)
     found_ids = {location["id"] for location in locations}
     missing_ids = set(location_ids) - found_ids
@@ -1056,6 +1058,8 @@ async def bulk_delete_locations(location_ids: List[str], current_user: User = De
         raise HTTPException(status_code=404, detail=f"Locations not found: {', '.join(missing_ids)}")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     result = await db.locations.delete_many({"id": {"$in": location_ids}})
     
     return {"message": f"Successfully deleted {result.deleted_count} locations"}
@@ -1066,6 +1070,8 @@ async def create_provider(provider_data: ProviderCreate, current_user: User = De
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Check if provider name already exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_provider = await db.providers.find_one({"name": provider_data.name})
     if existing_provider:
         raise HTTPException(status_code=400, detail="Provider name already exists")
@@ -1074,12 +1080,16 @@ async def create_provider(provider_data: ProviderCreate, current_user: User = De
     provider_dict["created_by"] = current_user.id
     provider_obj = Provider(**provider_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.providers.insert_one(provider_obj.model_dump())
     return provider_obj
 
 @api_router.get("/providers", response_model=List[Provider])
 async def get_providers(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "providers")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     providers = await db.providers.find(query).to_list(1000)
     # Convert ObjectIds to strings
     providers = [convert_objectid_to_str(provider) for provider in providers]
@@ -1087,6 +1097,8 @@ async def get_providers(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/providers/{provider_id}", response_model=Provider)
 async def get_provider(provider_id: str, current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     provider = await db.providers.find_one({"id": provider_id})
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
@@ -1097,13 +1109,19 @@ async def update_provider(provider_id: str, provider_data: ProviderCreate, curre
     if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     provider = await db.providers.find_one({"id": provider_id})
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
     
     update_data = provider_data.model_dump()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.providers.update_one({"id": provider_id}, {"$set": update_data})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_provider = await db.providers.find_one({"id": provider_id})
     return Provider(**updated_provider)
 
@@ -1112,11 +1130,15 @@ async def delete_provider(provider_id: str, current_user: User = Depends(get_cur
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     provider = await db.providers.find_one({"id": provider_id})
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.providers.delete_one({"id": provider_id})
     return {"message": "Provider deleted successfully"}
 
@@ -1126,6 +1148,8 @@ async def create_game_mix(game_mix_data: GameMixCreate, current_user: User = Dep
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Verify provider exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     provider = await db.providers.find_one({"id": game_mix_data.provider_id})
     if not provider:
         raise HTTPException(status_code=400, detail="Provider not found")
@@ -1135,12 +1159,16 @@ async def create_game_mix(game_mix_data: GameMixCreate, current_user: User = Dep
     game_mix_dict["game_count"] = len(game_mix_data.games)
     game_mix_obj = GameMix(**game_mix_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.game_mixes.insert_one(game_mix_obj.model_dump())
     return game_mix_obj
 
 @api_router.get("/game-mixes", response_model=List[GameMix])
 async def get_game_mixes(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "game_mixes")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     game_mixes = await db.game_mixes.find(query).to_list(1000)
     # Convert ObjectIds to strings
     game_mixes = [convert_objectid_to_str(game_mix) for game_mix in game_mixes]
@@ -1148,6 +1176,8 @@ async def get_game_mixes(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/game-mixes/{game_mix_id}", response_model=GameMix)
 async def get_game_mix(game_mix_id: str, current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     game_mix = await db.game_mixes.find_one({"id": game_mix_id})
     if not game_mix:
         raise HTTPException(status_code=404, detail="Game mix not found")
@@ -1158,14 +1188,20 @@ async def update_game_mix(game_mix_id: str, game_mix_data: GameMixCreate, curren
     if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     game_mix = await db.game_mixes.find_one({"id": game_mix_id})
     if not game_mix:
         raise HTTPException(status_code=404, detail="Game mix not found")
     
     update_data = game_mix_data.model_dump()
     update_data["game_count"] = len(game_mix_data.games)
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.game_mixes.update_one({"id": game_mix_id}, {"$set": update_data})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_game_mix = await db.game_mixes.find_one({"id": game_mix_id})
     return GameMix(**updated_game_mix)
 
@@ -1174,11 +1210,15 @@ async def delete_game_mix(game_mix_id: str, current_user: User = Depends(get_cur
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     game_mix = await db.game_mixes.find_one({"id": game_mix_id})
     if not game_mix:
         raise HTTPException(status_code=404, detail="Game mix not found")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.game_mixes.delete_one({"id": game_mix_id})
     return {"message": "Game mix deleted successfully"}
 
