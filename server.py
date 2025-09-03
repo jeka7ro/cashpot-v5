@@ -1963,6 +1963,8 @@ async def get_onjn_reports(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/onjn-reports/{report_id}", response_model=ONJNReport)
 async def get_onjn_report(report_id: str, current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     report = await db.onjn_reports.find_one({"id": report_id})
     if not report:
         raise HTTPException(status_code=404, detail="ONJN report not found")
@@ -1973,13 +1975,19 @@ async def update_onjn_report(report_id: str, report_data: ONJNReportCreate, curr
     if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     report = await db.onjn_reports.find_one({"id": report_id})
     if not report:
         raise HTTPException(status_code=404, detail="ONJN report not found")
     
     update_data = report_data.model_dump()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.onjn_reports.update_one({"id": report_id}, {"$set": update_data})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_report = await db.onjn_reports.find_one({"id": report_id})
     return ONJNReport(**updated_report)
 
@@ -1988,6 +1996,8 @@ async def delete_onjn_report(report_id: str, current_user: User = Depends(get_cu
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.onjn_reports.delete_one({"id": report_id})
     return {"message": "ONJN report deleted successfully"}
 
