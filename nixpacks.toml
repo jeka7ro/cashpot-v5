@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python3", "pip"]
+nixPkgs = ["python311", "pip"]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
@@ -8,4 +8,4 @@ cmds = ["pip install -r requirements.txt"]
 cmds = ["echo 'Build complete'"]
 
 [start]
-cmd = "python3 server.py"
+cmd = "python server.py"
