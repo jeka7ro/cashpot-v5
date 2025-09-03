@@ -2081,6 +2081,8 @@ async def create_metrology(metrology_data: MetrologyCreate, current_user: User =
 
 @api_router.get("/metrology", response_model=List[dict])
 async def get_metrology(current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     cursor = db.metrology.find({})
     metrology_list = await cursor.to_list(length=None)
     
@@ -2348,6 +2350,8 @@ async def create_jackpot(jackpot_data: JackpotCreate, current_user: User = Depen
 
 @api_router.get("/jackpots", response_model=List[Jackpot])
 async def get_jackpots(current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     cursor = db.jackpots.find({})
     jackpot_list = await cursor.to_list(length=None)
     return [Jackpot(**convert_objectid_to_str(item)) for item in jackpot_list]
@@ -2888,6 +2892,8 @@ async def get_all_change_history(entity_type: str, current_user: User = Depends(
     """
     query = {"entity_type": entity_type}
     # Prefer created_at for sorting; also add secondary sort on scheduled_datetime if present
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     cursor = db.change_history.find(query).sort([
         ("created_at", -1),
         ("scheduled_datetime", -1),
