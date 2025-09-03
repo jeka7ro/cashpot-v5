@@ -12,7 +12,7 @@ from typing import List, Optional, Literal
 import uuid
 from datetime import datetime, timedelta
 import bcrypt
-import jwt
+from jose import jwt
 from geopy.geocoders import Nominatim
 import asyncio
 import random
