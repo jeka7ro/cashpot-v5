@@ -826,6 +826,8 @@ async def create_company(company_data: CompanyCreate, current_user: User = Depen
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Check if company name already exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_company = await db.companies.find_one({"name": company_data.name})
     if existing_company:
         raise HTTPException(status_code=400, detail="Company name already exists")
@@ -834,12 +836,16 @@ async def create_company(company_data: CompanyCreate, current_user: User = Depen
     company_dict["created_by"] = current_user.id
     company_obj = Company(**company_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.companies.insert_one(company_obj.model_dump())
     return company_obj
 
 @api_router.get("/companies", response_model=List[Company])
 async def get_companies(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "companies")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     companies = await db.companies.find(query).to_list(1000)
     # Convert ObjectIds to strings
     companies = [convert_objectid_to_str(company) for company in companies]
@@ -852,6 +858,8 @@ async def get_company(company_id: str, current_user: User = Depends(get_current_
     if current_user.role != UserRole.ADMIN and company_id not in accessible_companies:
         raise HTTPException(status_code=403, detail="Access denied to this company")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     company = await db.companies.find_one({"id": company_id})
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -862,13 +870,19 @@ async def update_company(company_id: str, company_data: CompanyCreate, current_u
     if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     company = await db.companies.find_one({"id": company_id})
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     
     update_data = company_data.model_dump()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.companies.update_one({"id": company_id}, {"$set": update_data})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_company = await db.companies.find_one({"id": company_id})
     return Company(**updated_company)
 
@@ -877,11 +891,15 @@ async def delete_company(company_id: str, current_user: User = Depends(get_curre
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     company = await db.companies.find_one({"id": company_id})
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.companies.delete_one({"id": company_id})
     return {"message": "Company deleted successfully"}
 
@@ -891,6 +909,8 @@ async def bulk_delete_companies(company_ids: List[str], current_user: User = Dep
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Verify all companies exist
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     companies = await db.companies.find({"id": {"$in": company_ids}}).to_list(1000)
     found_ids = {company["id"] for company in companies}
     missing_ids = set(company_ids) - found_ids
@@ -899,6 +919,8 @@ async def bulk_delete_companies(company_ids: List[str], current_user: User = Dep
         raise HTTPException(status_code=404, detail=f"Companies not found: {', '.join(missing_ids)}")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     result = await db.companies.delete_many({"id": {"$in": company_ids}})
     
     return {"message": f"Successfully deleted {result.deleted_count} companies"}
@@ -909,6 +931,8 @@ async def create_location(location_data: LocationCreate, current_user: User = De
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Verify company exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     company = await db.companies.find_one({"id": location_data.company_id})
     if not company:
         raise HTTPException(status_code=400, detail="Company not found")
@@ -918,6 +942,8 @@ async def create_location(location_data: LocationCreate, current_user: User = De
     
     # If manager_id is provided, get manager details and populate phone/email
     if location_data.manager_id:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         manager = await db.users.find_one({"id": location_data.manager_id})
         if manager:
             location_dict["manager_phone"] = manager.get("phone", "")
@@ -929,12 +955,16 @@ async def create_location(location_data: LocationCreate, current_user: User = De
     location_dict["longitude"] = lng
     
     location_obj = Location(**location_dict)
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.locations.insert_one(location_obj.model_dump())
     return location_obj
 
 @api_router.get("/locations", response_model=List[Location])
 async def get_locations(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "locations")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     locations = await db.locations.find(query).to_list(1000)
     # Convert ObjectIds to strings
     locations = [convert_objectid_to_str(location) for location in locations]
@@ -947,6 +977,8 @@ async def get_location(location_id: str, current_user: User = Depends(get_curren
     if current_user.role != UserRole.ADMIN and location_id not in accessible_locations:
         raise HTTPException(status_code=403, detail="Access denied to this location")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     location = await db.locations.find_one({"id": location_id})
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
@@ -957,6 +989,8 @@ async def update_location(location_id: str, location_data: LocationCreate, curre
     if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     location = await db.locations.find_one({"id": location_id})
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
@@ -965,6 +999,8 @@ async def update_location(location_id: str, location_data: LocationCreate, curre
     
     # If manager_id is provided, get manager details and populate phone/email
     if location_data.manager_id:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         manager = await db.users.find_one({"id": location_data.manager_id})
         if manager:
             update_data["manager_phone"] = manager.get("phone", "")
@@ -980,8 +1016,12 @@ async def update_location(location_id: str, location_data: LocationCreate, curre
         update_data["latitude"] = lat
         update_data["longitude"] = lng
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.locations.update_one({"id": location_id}, {"$set": update_data})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_location = await db.locations.find_one({"id": location_id})
     return Location(**updated_location)
 
@@ -990,11 +1030,15 @@ async def delete_location(location_id: str, current_user: User = Depends(get_cur
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     location = await db.locations.find_one({"id": location_id})
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.locations.delete_one({"id": location_id})
     return {"message": "Location deleted successfully"}
 
