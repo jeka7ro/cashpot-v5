@@ -2011,12 +2011,16 @@ async def create_legal_document(document_data: LegalDocumentCreate, current_user
     document_dict["created_by"] = current_user.id
     document_obj = LegalDocument(**document_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.legal_documents.insert_one(document_obj.model_dump())
     return document_obj
 
 @api_router.get("/legal-documents", response_model=List[LegalDocument])
 async def get_legal_documents(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "legal_documents")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     documents = await db.legal_documents.find(query).to_list(1000)
     # Convert ObjectIds to strings
     documents = [convert_objectid_to_str(document) for document in documents]
@@ -2024,6 +2028,8 @@ async def get_legal_documents(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/legal-documents/{document_id}", response_model=LegalDocument)
 async def get_legal_document(document_id: str, current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     document = await db.legal_documents.find_one({"id": document_id})
     if not document:
         raise HTTPException(status_code=404, detail="Legal document not found")
@@ -2034,13 +2040,19 @@ async def update_legal_document(document_id: str, document_data: LegalDocumentCr
     if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     document = await db.legal_documents.find_one({"id": document_id})
     if not document:
         raise HTTPException(status_code=404, detail="Legal document not found")
     
     update_data = document_data.model_dump()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.legal_documents.update_one({"id": document_id}, {"$set": update_data})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_document = await db.legal_documents.find_one({"id": document_id})
     return LegalDocument(**updated_document)
 
@@ -2049,6 +2061,8 @@ async def delete_legal_document(document_id: str, current_user: User = Depends(g
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.legal_documents.delete_one({"id": document_id})
     return {"message": "Legal document deleted successfully"}
 
