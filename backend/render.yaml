@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: cashpot-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r "Downloads/cash-pot v5 copy/requirements.txt"
+    startCommand: python "Downloads/cash-pot v5 copy/server.py"
+    envVars:
+      - key: MONGO_URL
+        value: mongodb://localhost:27017
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: CORS_ORIGINS
+        value: '["https://jeka7ro.github.io", "https://jeka7ro.github.io/cashpot-v5"]'
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "False"
