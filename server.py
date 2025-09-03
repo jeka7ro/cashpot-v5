@@ -1683,6 +1683,8 @@ async def upload_attachment(attachment_data: AttachmentCreate, current_user: Use
     attachment_dict["uploaded_by"] = current_user.id
     attachment_obj = Attachment(**attachment_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.attachments.insert_one(attachment_obj.model_dump())
     return attachment_obj
 
@@ -1734,6 +1736,8 @@ async def get_entity_attachments(entity_type: str, entity_id: str, current_user:
         # You can add more specific access control here if needed
         pass
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     attachments = await db.attachments.find({
         "entity_type": entity_type,
         "entity_id": entity_id
@@ -1747,6 +1751,8 @@ async def get_entity_attachments(entity_type: str, entity_id: str, current_user:
         # Get creator information
         creator_info = {"first_name": "", "last_name": ""}
         if "uploaded_by" in attachment_data:
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             creator = await db.users.find_one({"id": attachment_data["uploaded_by"]})
             if creator:
                 creator_info = {
@@ -1763,6 +1769,8 @@ async def get_entity_attachments(entity_type: str, entity_id: str, current_user:
 
 @api_router.get("/attachments/{attachment_id}")
 async def download_attachment(attachment_id: str, current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     attachment = await db.attachments.find_one({"id": attachment_id})
     if not attachment:
         raise HTTPException(status_code=404, detail="Attachment not found")
@@ -1778,10 +1786,14 @@ async def delete_attachment(attachment_id: str, current_user: User = Depends(get
     if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     attachment = await db.attachments.find_one({"id": attachment_id})
     if not attachment:
         raise HTTPException(status_code=404, detail="Attachment not found")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.attachments.delete_one({"id": attachment_id})
     return {"message": "Attachment deleted successfully"}
 
@@ -1790,11 +1802,15 @@ async def get_marketing_attachments_count(campaign_id: str, current_user: User =
     """Get the count of attachments for a specific marketing campaign"""
     try:
         # Check if marketing campaign exists
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         campaign = await db.marketing_campaigns.find_one({"id": campaign_id})
         if not campaign:
             raise HTTPException(status_code=404, detail="Marketing campaign not found")
         
         # Count attachments for this campaign
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         count = await db.attachments.count_documents({
             "entity_type": "marketing",
             "entity_id": campaign_id
@@ -1811,15 +1827,21 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Verify company and location exist
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     company = await db.companies.find_one({"id": invoice_data.company_id})
     if not company:
         raise HTTPException(status_code=400, detail="Company not found")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     location = await db.locations.find_one({"id": invoice_data.location_id})
     if not location:
         raise HTTPException(status_code=400, detail="Location not found")
     
     # Check if invoice number already exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_invoice = await db.invoices.find_one({"invoice_number": invoice_data.invoice_number})
     if existing_invoice:
         raise HTTPException(status_code=400, detail="Invoice number already exists")
@@ -1829,6 +1851,8 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
     if serial_numbers:
         for serial_number in serial_numbers:
             if serial_number:  # Skip empty strings
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 slot_machine = await db.slot_machines.find_one({"serial_number": serial_number})
                 if not slot_machine:
                     raise HTTPException(status_code=400, detail=f"Serial number {serial_number} not found in slot machines")
@@ -1838,12 +1862,16 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
     invoice_obj = Invoice(**invoice_dict)
     
     # Create the invoice
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.invoices.insert_one(invoice_obj.model_dump())
     
     # Update slot machines with invoice number
     if serial_numbers:
         for serial_number in serial_numbers:
             if serial_number:
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 await db.slot_machines.update_one(
                     {"serial_number": serial_number},
                     {"$set": {"invoice_number": invoice_data.invoice_number}}
@@ -1854,6 +1882,8 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
 @api_router.get("/invoices", response_model=List[Invoice])
 async def get_invoices(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "invoices")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     invoices = await db.invoices.find(query).to_list(1000)
     # Convert ObjectIds to strings
     invoices = [convert_objectid_to_str(invoice) for invoice in invoices]
@@ -1861,6 +1891,8 @@ async def get_invoices(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/invoices/{invoice_id}", response_model=Invoice)
 async def get_invoice(invoice_id: str, current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     invoice = await db.invoices.find_one({"id": invoice_id})
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
@@ -1871,13 +1903,19 @@ async def update_invoice(invoice_id: str, invoice_data: InvoiceCreate, current_u
     if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     invoice = await db.invoices.find_one({"id": invoice_id})
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     
     update_data = invoice_data.model_dump()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.invoices.update_one({"id": invoice_id}, {"$set": update_data})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_invoice = await db.invoices.find_one({"id": invoice_id})
     return Invoice(**updated_invoice)
 
@@ -1886,6 +1924,8 @@ async def delete_invoice(invoice_id: str, current_user: User = Depends(get_curre
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.invoices.delete_one({"id": invoice_id})
     return {"message": "Invoice deleted successfully"}
 
@@ -1896,6 +1936,8 @@ async def create_onjn_report(report_data: ONJNReportCreate, current_user: User =
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Check if report number already exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_report = await db.onjn_reports.find_one({"report_number": report_data.report_number})
     if existing_report:
         raise HTTPException(status_code=400, detail="Report number already exists")
@@ -1904,12 +1946,16 @@ async def create_onjn_report(report_data: ONJNReportCreate, current_user: User =
     report_dict["created_by"] = current_user.id
     report_obj = ONJNReport(**report_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.onjn_reports.insert_one(report_obj.model_dump())
     return report_obj
 
 @api_router.get("/onjn-reports", response_model=List[ONJNReport])
 async def get_onjn_reports(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "onjn_reports")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     reports = await db.onjn_reports.find(query).to_list(1000)
     # Convert ObjectIds to strings
     reports = [convert_objectid_to_str(report) for report in reports]
