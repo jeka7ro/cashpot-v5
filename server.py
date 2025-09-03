@@ -1228,6 +1228,8 @@ async def create_cabinet(cabinet_data: CabinetCreate, current_user: User = Depen
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Verify provider exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     provider = await db.providers.find_one({"id": cabinet_data.provider_id})
     if not provider:
         raise HTTPException(status_code=400, detail="Provider not found")
@@ -1236,6 +1238,8 @@ async def create_cabinet(cabinet_data: CabinetCreate, current_user: User = Depen
     cabinet_dict["created_by"] = current_user.id
     cabinet_obj = Cabinet(**cabinet_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.cabinets.insert_one(cabinet_obj.model_dump())
     return cabinet_obj
 
@@ -1243,6 +1247,8 @@ async def create_cabinet(cabinet_data: CabinetCreate, current_user: User = Depen
 async def get_cabinets(current_user: User = Depends(get_current_user)):
     # Return all cabinets - FINAL SIMPLE VERSION
     try:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         cabinets = await db.cabinets.find({}).to_list(1000)
         result = []
         for cabinet in cabinets:
@@ -1267,6 +1273,8 @@ async def get_cabinets(current_user: User = Depends(get_current_user)):
 async def get_cabinets_simple():
     # Simple endpoint without authentication
     try:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         cabinets = await db.cabinets.find({}).to_list(1000)
         result = []
         for cabinet in cabinets:
@@ -1293,6 +1301,8 @@ async def get_cabinets_simple():
 @api_router.get("/cabinets-test", response_model=List[Cabinet])
 async def get_cabinets_test():
     # Test endpoint without authentication
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     cabinets = await db.cabinets.find({}).to_list(1000)
     # Convert ObjectIds to strings
     cabinets = [convert_objectid_to_str(cabinet) for cabinet in cabinets]
@@ -1302,8 +1312,12 @@ async def get_cabinets_test():
 async def get_cabinet(cabinet_id: str, current_user: User = Depends(get_current_user)):
     # Try to find by _id first (ObjectId), then by id (UUID string)
     try:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         cabinet = await db.cabinets.find_one({"_id": ObjectId(cabinet_id)})
     except Exception as e:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         cabinet = await db.cabinets.find_one({"id": cabinet_id})
     
     if not cabinet:
@@ -1317,9 +1331,13 @@ async def update_cabinet(cabinet_id: str, cabinet_data: CabinetUpdate, current_u
     
     # Try to find by _id first (ObjectId), then by id (UUID string)
     try:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         cabinet = await db.cabinets.find_one({"_id": ObjectId(cabinet_id)})
         query = {"_id": ObjectId(cabinet_id)}
     except:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         cabinet = await db.cabinets.find_one({"id": cabinet_id})
         query = {"id": cabinet_id}
     
@@ -1333,8 +1351,12 @@ async def update_cabinet(cabinet_id: str, cabinet_data: CabinetUpdate, current_u
             update_data[field] = value
     
     if update_data:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         await db.cabinets.update_one(query, {"$set": update_data})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_cabinet = await db.cabinets.find_one(query)
     
     if not updated_cabinet:
@@ -1377,9 +1399,13 @@ async def delete_cabinet(cabinet_id: str, current_user: User = Depends(get_curre
     
     # Try to find by _id first (ObjectId), then by id (UUID string)
     try:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         cabinet = await db.cabinets.find_one({"_id": ObjectId(cabinet_id)})
         query = {"_id": ObjectId(cabinet_id)}
     except:
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         cabinet = await db.cabinets.find_one({"id": cabinet_id})
         query = {"id": cabinet_id}
     
@@ -1387,6 +1413,8 @@ async def delete_cabinet(cabinet_id: str, current_user: User = Depends(get_curre
         raise HTTPException(status_code=404, detail="Cabinet not found")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.cabinets.delete_one(query)
     return {"message": "Cabinet deleted successfully"}
 
@@ -1396,10 +1424,14 @@ async def create_slot_machine(slot_data: SlotMachineCreate, current_user: User =
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Verify cabinet and game mix exist
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     cabinet = await db.cabinets.find_one({"id": slot_data.cabinet_id})
     if not cabinet:
         raise HTTPException(status_code=400, detail="Cabinet not found")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     game_mix = await db.game_mixes.find_one({"id": slot_data.game_mix_id})
     if not game_mix:
         raise HTTPException(status_code=400, detail="Game mix not found")
@@ -1409,12 +1441,16 @@ async def create_slot_machine(slot_data: SlotMachineCreate, current_user: User =
     
     slot_obj = SlotMachine(**slot_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.slot_machines.insert_one(slot_obj.model_dump())
     return slot_obj
 
 @api_router.get("/slot-machines", response_model=List[SlotMachine])
 async def get_slot_machines(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "slot_machines")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     slot_machines = await db.slot_machines.find(query).to_list(1000)
     # Convert ObjectIds to strings
     slot_machines = [convert_objectid_to_str(slot_machine) for slot_machine in slot_machines]
@@ -1422,6 +1458,8 @@ async def get_slot_machines(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/slot-machines/{slot_machine_id}", response_model=SlotMachine)
 async def get_slot_machine(slot_machine_id: str, current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     slot_machine = await db.slot_machines.find_one({"id": slot_machine_id})
     if not slot_machine:
         raise HTTPException(status_code=404, detail="Slot machine not found")
@@ -1431,6 +1469,8 @@ async def get_slot_machine(slot_machine_id: str, current_user: User = Depends(ge
 async def update_slot_machine(slot_machine_id: str, slot_data: SlotMachineUpdate, current_user: User = Depends(get_current_user)):
     try:
         # Check if slot machine exists
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         slot_machine = await db.slot_machines.find_one({"id": slot_machine_id})
         if not slot_machine:
             raise HTTPException(status_code=404, detail="Slot machine not found")
@@ -1465,9 +1505,13 @@ async def update_slot_machine(slot_machine_id: str, slot_data: SlotMachineUpdate
                     "user_id": current_user.id,
                     "user_name": f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username
                 }
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 await db.change_history.insert_one(change_record)
         
         # Update the slot machine
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         result = await db.slot_machines.update_one(
             {"id": slot_machine_id},
             {"$set": update_data}
@@ -1477,6 +1521,8 @@ async def update_slot_machine(slot_machine_id: str, slot_data: SlotMachineUpdate
             raise HTTPException(status_code=400, detail="No changes made to slot machine")
         
         # Return updated slot machine
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         updated_slot = await db.slot_machines.find_one({"id": slot_machine_id})
         return SlotMachine(**updated_slot)
         
@@ -1491,11 +1537,15 @@ async def delete_slot_machine(slot_machine_id: str, current_user: User = Depends
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     slot_machine = await db.slot_machines.find_one({"id": slot_machine_id})
     if not slot_machine:
         raise HTTPException(status_code=404, detail="Slot machine not found")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.slot_machines.delete_one({"id": slot_machine_id})
     return {"message": "Slot machine deleted successfully"}
 # File upload helper functions
