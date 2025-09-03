@@ -2074,6 +2074,8 @@ async def create_metrology(metrology_data: MetrologyCreate, current_user: User =
         created_by=current_user.id
     )
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.metrology.insert_one(metrology.model_dump())
     return metrology
 
@@ -2087,6 +2089,8 @@ async def get_metrology(current_user: User = Depends(get_current_user)):
         if '_id' in item and 'id' not in item:
             # Add UUID id field for records that don't have it
             item['id'] = str(uuid.uuid4())
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             await db.metrology.update_one({'_id': item['_id']}, {'$set': {'id': item['id']}})
             print(f"🔧 Added missing 'id' field to metrology record: {item['_id']} -> {item['id']}")
     
@@ -2099,6 +2103,8 @@ async def get_metrology(current_user: User = Depends(get_current_user)):
         creator_info = {"first_name": "", "last_name": ""}
         if "created_by" in metrology_data:
             print(f"🔍 Looking for creator with ID: {metrology_data['created_by']}")
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             creator = await db.users.find_one({"id": metrology_data["created_by"]})
             if creator:
                 creator_info = {
@@ -2118,6 +2124,8 @@ async def get_metrology(current_user: User = Depends(get_current_user)):
         updater_info = {"first_name": "", "last_name": ""}
         if "updated_by" in metrology_data and metrology_data["updated_by"]:
             print(f"🔍 Looking for updater with ID: {metrology_data['updated_by']}")
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             updater = await db.users.find_one({"id": metrology_data["updated_by"]})
             if updater:
                 updater_info = {
@@ -2140,11 +2148,15 @@ async def get_metrology(current_user: User = Depends(get_current_user)):
 @api_router.get("/metrology/{metrology_id}", response_model=dict)
 async def get_metrology_record(metrology_id: str, current_user: User = Depends(get_current_user)):
     # Try to find by id first, then by _id
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     metrology = await db.metrology.find_one({"id": metrology_id})
     if not metrology:
         # Try with _id (ObjectId)
         try:
             from bson import ObjectId
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             metrology = await db.metrology.find_one({"_id": ObjectId(metrology_id)})
         except:
             pass
@@ -2159,6 +2171,8 @@ async def get_metrology_record(metrology_id: str, current_user: User = Depends(g
     creator_info = {"first_name": "", "last_name": ""}
     if "created_by" in metrology_data:
         print(f"🔍 Looking for creator with ID: {metrology_data['created_by']}")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         creator = await db.users.find_one({"id": metrology_data["created_by"]})
         if creator:
             creator_info = {
@@ -2178,6 +2192,8 @@ async def get_metrology_record(metrology_id: str, current_user: User = Depends(g
     updater_info = {"first_name": "", "last_name": ""}
     if "updated_by" in metrology_data and metrology_data["updated_by"]:
         print(f"🔍 Looking for updater with ID: {metrology_data['updated_by']}")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         updater = await db.users.find_one({"id": metrology_data["updated_by"]})
         if updater:
             updater_info = {
@@ -2204,6 +2220,8 @@ async def update_metrology_simple(metrology_id: str, request: Request, current_u
     print(f"📦 Received update data: {body}")
     
     # Check if metrology record exists - try both id and _id
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_metrology = await db.metrology.find_one({"id": metrology_id})
     print(f"🔍 Search by 'id' field result: {existing_metrology is not None}")
     
@@ -2211,6 +2229,8 @@ async def update_metrology_simple(metrology_id: str, request: Request, current_u
         # Try with _id (ObjectId)
         try:
             from bson import ObjectId
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             existing_metrology = await db.metrology.find_one({"_id": ObjectId(metrology_id)})
             print(f"🔍 Search by '_id' field result: {existing_metrology is not None}")
         except Exception as e:
@@ -2238,11 +2258,15 @@ async def update_metrology_simple(metrology_id: str, request: Request, current_u
     print(f"📝 Update data prepared: {update_data}")
     
     # Try to update by id first, then by _id
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     result = await db.metrology.update_one({"id": metrology_id}, {"$set": update_data})
     if result.modified_count == 0:
         # Try with _id (ObjectId)
         try:
             from bson import ObjectId
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             result = await db.metrology.update_one({"_id": ObjectId(metrology_id)}, {"$set": update_data})
         except:
             pass
@@ -2253,10 +2277,14 @@ async def update_metrology_simple(metrology_id: str, request: Request, current_u
     print(f"✅ Update successful, modified count: {result.modified_count}")
     
     # Get updated record
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_metrology = await db.metrology.find_one({"id": metrology_id})
     if not updated_metrology:
         try:
             from bson import ObjectId
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             updated_metrology = await db.metrology.find_one({"_id": ObjectId(metrology_id)})
         except:
             pass
@@ -2266,11 +2294,15 @@ async def update_metrology_simple(metrology_id: str, request: Request, current_u
 @api_router.delete("/metrology/{metrology_id}")
 async def delete_metrology(metrology_id: str, current_user: User = Depends(get_current_user)):
     # Check if metrology record exists - try both _id and id
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     metrology = await db.metrology.find_one({"id": metrology_id})
     if not metrology:
         # Try with _id (ObjectId)
         try:
             from bson import ObjectId
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             metrology = await db.metrology.find_one({"_id": ObjectId(metrology_id)})
         except:
             pass
@@ -2279,11 +2311,15 @@ async def delete_metrology(metrology_id: str, current_user: User = Depends(get_c
         raise HTTPException(status_code=404, detail="Metrology record not found")
     
     # Delete metrology record - try both _id and id
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     result = await db.metrology.delete_one({"id": metrology_id})
     if result.deleted_count == 0:
         # Try with _id (ObjectId)
         try:
             from bson import ObjectId
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             result = await db.metrology.delete_one({"_id": ObjectId(metrology_id)})
         except:
             pass
@@ -2305,6 +2341,8 @@ async def create_jackpot(jackpot_data: JackpotCreate, current_user: User = Depen
     jackpot_dict = jackpot.model_dump()
     jackpot_dict["id"] = str(uuid.uuid4())  # Set UUID for jackpot
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.jackpots.insert_one(jackpot_dict)
     return Jackpot(**jackpot_dict)
 
@@ -2316,6 +2354,8 @@ async def get_jackpots(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/jackpots/{jackpot_id}", response_model=Jackpot)
 async def get_jackpot(jackpot_id: str, current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     jackpot = await db.jackpots.find_one({"id": jackpot_id})
     if not jackpot:
         raise HTTPException(status_code=404, detail="Jackpot record not found")
@@ -2325,23 +2365,33 @@ async def get_jackpot(jackpot_id: str, current_user: User = Depends(get_current_
 @api_router.put("/jackpots/{jackpot_id}", response_model=Jackpot)
 async def update_jackpot(jackpot_id: str, jackpot_data: JackpotCreate, current_user: User = Depends(get_current_user)):
     # Check if jackpot record exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_jackpot = await db.jackpots.find_one({"id": jackpot_id})
     if not existing_jackpot:
         raise HTTPException(status_code=404, detail="Jackpot record not found")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.jackpots.update_one({"id": jackpot_id}, {"$set": jackpot_data.model_dump()})
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     updated_jackpot = await db.jackpots.find_one({"id": jackpot_id})
     return Jackpot(**convert_objectid_to_str(updated_jackpot))
 
 @api_router.delete("/jackpots/{jackpot_id}")
 async def delete_jackpot(jackpot_id: str, current_user: User = Depends(get_current_user)):
     # Check if jackpot record exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     jackpot = await db.jackpots.find_one({"id": jackpot_id})
     if not jackpot:
         raise HTTPException(status_code=404, detail="Jackpot record not found")
     
     # Delete jackpot record
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.jackpots.delete_one({"id": jackpot_id})
     return {"message": "Jackpot record deleted successfully"}
 
