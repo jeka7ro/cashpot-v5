@@ -1,13 +1,11 @@
 {
   "files": {
-    "main.css": "/static/css/main.095a8bb4.css",
-    "main.js": "/static/js/main.0df75ffa.js",
-    "index.html": "/index.html",
-    "main.095a8bb4.css.map": "/static/css/main.095a8bb4.css.map",
-    "main.0df75ffa.js.map": "/static/js/main.0df75ffa.js.map"
+    "main.css": "/cashpot-v5/static/css/main.3e7276ab.css",
+    "main.js": "/cashpot-v5/static/js/main.193ed935.js",
+    "index.html": "/cashpot-v5/index.html"
   },
   "entrypoints": [
-    "static/css/main.095a8bb4.css",
-    "static/js/main.0df75ffa.js"
+    "static/css/main.3e7276ab.css",
+    "static/js/main.193ed935.js"
   ]
 }
