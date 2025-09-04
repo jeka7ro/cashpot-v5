@@ -600,6 +600,10 @@ async def get_user_accessible_locations(user: User) -> List[str]:
         # Admin sees all locations
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         locations = await db.locations.find({}).to_list(1000)
         return [loc["id"] for loc in locations]
     else:
@@ -615,6 +619,10 @@ async def get_user_accessible_companies(user: User) -> List[str]:
         # Admin sees all companies
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         companies = await db.companies.find({}).to_list(1000)
         return [comp["id"] for comp in companies]
     else:
@@ -627,6 +635,10 @@ async def get_user_accessible_companies(user: User) -> List[str]:
         if not accessible_locations:
             return []  # No accessible locations = no accessible companies
         
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
         locations = await db.locations.find({"id": {"$in": accessible_locations}}).to_list(1000)
@@ -656,11 +668,19 @@ async def filter_by_user_access(user: User, query: dict, entity_type: str) -> di
                 # Get providers used in accessible cabinets
                 if db is None:
                     raise HTTPException(status_code=503, detail="Database not available")
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 cabinets = await db.cabinets.find({"location_id": {"$in": accessible_locations}}).to_list(1000)
                 provider_ids = list(set([cab["provider_id"] for cab in cabinets if "provider_id" in cab]))
                 query["id"] = {"$in": provider_ids}
             elif entity_type == "game_mixes":
                 # Get game mixes used in accessible slot machines
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 if db is None:
                     raise HTTPException(status_code=503, detail="Database not available")
                 slot_machines = await db.slot_machines.find({}).to_list(1000)
@@ -720,6 +740,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         user = await db.users.find_one({"id": user_id})
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
@@ -745,6 +769,10 @@ async def register(user_data: UserCreate):
     # Check if user already exists
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_user = await db.users.find_one({"$or": [{"username": user_data.username}, {"email": user_data.email}]})
     if existing_user:
         raise HTTPException(status_code=400, detail="Username or email already registered")
@@ -760,6 +788,12 @@ async def register(user_data: UserCreate):
     user_obj = User(**user_dict)
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.users.insert_one(user_obj.model_dump())
     
     return {"message": "User created successfully", "user_id": user_obj.id}
@@ -770,6 +804,10 @@ async def login(user_data: UserLogin):
     print(f"🔍 Password received: '{user_data.password}' (length: {len(user_data.password)})")
     print(f"🔍 Password type: {type(user_data.password)}")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     user = await db.users.find_one({"username": user_data.username})
@@ -828,6 +866,10 @@ async def create_company(company_data: CompanyCreate, current_user: User = Depen
     # Check if company name already exists
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_company = await db.companies.find_one({"name": company_data.name})
     if existing_company:
         raise HTTPException(status_code=400, detail="Company name already exists")
@@ -838,12 +880,20 @@ async def create_company(company_data: CompanyCreate, current_user: User = Depen
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.companies.insert_one(company_obj.model_dump())
     return company_obj
 
 @api_router.get("/companies", response_model=List[Company])
 async def get_companies(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "companies")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     companies = await db.companies.find(query).to_list(1000)
@@ -879,6 +929,10 @@ async def update_company(company_id: str, company_data: CompanyCreate, current_u
     update_data = company_data.model_dump()
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.companies.update_one({"id": company_id}, {"$set": update_data})
     
     if db is None:
@@ -900,6 +954,10 @@ async def delete_company(company_id: str, current_user: User = Depends(get_curre
     # HARD DELETE - actually remove from database
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.companies.delete_one({"id": company_id})
     return {"message": "Company deleted successfully"}
 
@@ -909,6 +967,10 @@ async def bulk_delete_companies(company_ids: List[str], current_user: User = Dep
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Verify all companies exist
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     companies = await db.companies.find({"id": {"$in": company_ids}}).to_list(1000)
@@ -921,6 +983,10 @@ async def bulk_delete_companies(company_ids: List[str], current_user: User = Dep
     # HARD DELETE - actually remove from database
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     result = await db.companies.delete_many({"id": {"$in": company_ids}})
     
     return {"message": f"Successfully deleted {result.deleted_count} companies"}
@@ -931,6 +997,10 @@ async def create_location(location_data: LocationCreate, current_user: User = De
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Verify company exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     company = await db.companies.find_one({"id": location_data.company_id})
@@ -957,12 +1027,20 @@ async def create_location(location_data: LocationCreate, current_user: User = De
     location_obj = Location(**location_dict)
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.locations.insert_one(location_obj.model_dump())
     return location_obj
 
 @api_router.get("/locations", response_model=List[Location])
 async def get_locations(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "locations")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     locations = await db.locations.find(query).to_list(1000)
@@ -1018,6 +1096,10 @@ async def update_location(location_id: str, location_data: LocationCreate, curre
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.locations.update_one({"id": location_id}, {"$set": update_data})
     
     if db is None:
@@ -1039,6 +1121,10 @@ async def delete_location(location_id: str, current_user: User = Depends(get_cur
     # HARD DELETE - actually remove from database
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.locations.delete_one({"id": location_id})
     return {"message": "Location deleted successfully"}
 
@@ -1050,6 +1136,10 @@ async def bulk_delete_locations(location_ids: List[str], current_user: User = De
     # Verify all locations exist
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     locations = await db.locations.find({"id": {"$in": location_ids}}).to_list(1000)
     found_ids = {location["id"] for location in locations}
     missing_ids = set(location_ids) - found_ids
@@ -1058,6 +1148,10 @@ async def bulk_delete_locations(location_ids: List[str], current_user: User = De
         raise HTTPException(status_code=404, detail=f"Locations not found: {', '.join(missing_ids)}")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     result = await db.locations.delete_many({"id": {"$in": location_ids}})
@@ -1072,6 +1166,10 @@ async def create_provider(provider_data: ProviderCreate, current_user: User = De
     # Check if provider name already exists
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_provider = await db.providers.find_one({"name": provider_data.name})
     if existing_provider:
         raise HTTPException(status_code=400, detail="Provider name already exists")
@@ -1082,12 +1180,20 @@ async def create_provider(provider_data: ProviderCreate, current_user: User = De
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.providers.insert_one(provider_obj.model_dump())
     return provider_obj
 
 @api_router.get("/providers", response_model=List[Provider])
 async def get_providers(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "providers")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     providers = await db.providers.find(query).to_list(1000)
@@ -1118,6 +1224,10 @@ async def update_provider(provider_id: str, provider_data: ProviderCreate, curre
     update_data = provider_data.model_dump()
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.providers.update_one({"id": provider_id}, {"$set": update_data})
     
     if db is None:
@@ -1139,6 +1249,10 @@ async def delete_provider(provider_id: str, current_user: User = Depends(get_cur
     # HARD DELETE - actually remove from database
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.providers.delete_one({"id": provider_id})
     return {"message": "Provider deleted successfully"}
 
@@ -1148,6 +1262,10 @@ async def create_game_mix(game_mix_data: GameMixCreate, current_user: User = Dep
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Verify provider exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     provider = await db.providers.find_one({"id": game_mix_data.provider_id})
@@ -1161,12 +1279,20 @@ async def create_game_mix(game_mix_data: GameMixCreate, current_user: User = Dep
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.game_mixes.insert_one(game_mix_obj.model_dump())
     return game_mix_obj
 
 @api_router.get("/game-mixes", response_model=List[GameMix])
 async def get_game_mixes(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "game_mixes")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     game_mixes = await db.game_mixes.find(query).to_list(1000)
@@ -1198,6 +1324,10 @@ async def update_game_mix(game_mix_id: str, game_mix_data: GameMixCreate, curren
     update_data["game_count"] = len(game_mix_data.games)
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.game_mixes.update_one({"id": game_mix_id}, {"$set": update_data})
     
     if db is None:
@@ -1219,6 +1349,10 @@ async def delete_game_mix(game_mix_id: str, current_user: User = Depends(get_cur
     # HARD DELETE - actually remove from database
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.game_mixes.delete_one({"id": game_mix_id})
     return {"message": "Game mix deleted successfully"}
 
@@ -1230,6 +1364,10 @@ async def create_cabinet(cabinet_data: CabinetCreate, current_user: User = Depen
     # Verify provider exists
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     provider = await db.providers.find_one({"id": cabinet_data.provider_id})
     if not provider:
         raise HTTPException(status_code=400, detail="Provider not found")
@@ -1238,6 +1376,10 @@ async def create_cabinet(cabinet_data: CabinetCreate, current_user: User = Depen
     cabinet_dict["created_by"] = current_user.id
     cabinet_obj = Cabinet(**cabinet_dict)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     await db.cabinets.insert_one(cabinet_obj.model_dump())
@@ -1353,6 +1495,10 @@ async def update_cabinet(cabinet_id: str, cabinet_data: CabinetUpdate, current_u
     if update_data:
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         await db.cabinets.update_one(query, {"$set": update_data})
     
     if db is None:
@@ -1415,6 +1561,10 @@ async def delete_cabinet(cabinet_id: str, current_user: User = Depends(get_curre
     # HARD DELETE - actually remove from database
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.cabinets.delete_one(query)
     return {"message": "Cabinet deleted successfully"}
 
@@ -1426,10 +1576,18 @@ async def create_slot_machine(slot_data: SlotMachineCreate, current_user: User =
     # Verify cabinet and game mix exist
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     cabinet = await db.cabinets.find_one({"id": slot_data.cabinet_id})
     if not cabinet:
         raise HTTPException(status_code=400, detail="Cabinet not found")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     game_mix = await db.game_mixes.find_one({"id": slot_data.game_mix_id})
@@ -1443,12 +1601,20 @@ async def create_slot_machine(slot_data: SlotMachineCreate, current_user: User =
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.slot_machines.insert_one(slot_obj.model_dump())
     return slot_obj
 
 @api_router.get("/slot-machines", response_model=List[SlotMachine])
 async def get_slot_machines(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "slot_machines")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     slot_machines = await db.slot_machines.find(query).to_list(1000)
@@ -1469,6 +1635,10 @@ async def get_slot_machine(slot_machine_id: str, current_user: User = Depends(ge
 async def update_slot_machine(slot_machine_id: str, slot_data: SlotMachineUpdate, current_user: User = Depends(get_current_user)):
     try:
         # Check if slot machine exists
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
         slot_machine = await db.slot_machines.find_one({"id": slot_machine_id})
@@ -1507,9 +1677,17 @@ async def update_slot_machine(slot_machine_id: str, slot_data: SlotMachineUpdate
                 }
                 if db is None:
                     raise HTTPException(status_code=503, detail="Database not available")
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 await db.change_history.insert_one(change_record)
         
         # Update the slot machine
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
         result = await db.slot_machines.update_one(
@@ -1521,6 +1699,10 @@ async def update_slot_machine(slot_machine_id: str, slot_data: SlotMachineUpdate
             raise HTTPException(status_code=400, detail="No changes made to slot machine")
         
         # Return updated slot machine
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
         updated_slot = await db.slot_machines.find_one({"id": slot_machine_id})
@@ -1544,6 +1726,10 @@ async def delete_slot_machine(slot_machine_id: str, current_user: User = Depends
         raise HTTPException(status_code=404, detail="Slot machine not found")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     await db.slot_machines.delete_one({"id": slot_machine_id})
@@ -1685,6 +1871,10 @@ async def upload_attachment(attachment_data: AttachmentCreate, current_user: Use
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.attachments.insert_one(attachment_obj.model_dump())
     return attachment_obj
 
@@ -1738,6 +1928,10 @@ async def get_entity_attachments(entity_type: str, entity_id: str, current_user:
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     attachments = await db.attachments.find({
         "entity_type": entity_type,
         "entity_id": entity_id
@@ -1751,6 +1945,10 @@ async def get_entity_attachments(entity_type: str, entity_id: str, current_user:
         # Get creator information
         creator_info = {"first_name": "", "last_name": ""}
         if "uploaded_by" in attachment_data:
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             if db is None:
                 raise HTTPException(status_code=503, detail="Database not available")
             creator = await db.users.find_one({"id": attachment_data["uploaded_by"]})
@@ -1794,6 +1992,10 @@ async def delete_attachment(attachment_id: str, current_user: User = Depends(get
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.attachments.delete_one({"id": attachment_id})
     return {"message": "Attachment deleted successfully"}
 
@@ -1804,11 +2006,19 @@ async def get_marketing_attachments_count(campaign_id: str, current_user: User =
         # Check if marketing campaign exists
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         campaign = await db.marketing_campaigns.find_one({"id": campaign_id})
         if not campaign:
             raise HTTPException(status_code=404, detail="Marketing campaign not found")
         
         # Count attachments for this campaign
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database not available")
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
         count = await db.attachments.count_documents({
@@ -1829,10 +2039,18 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
     # Verify company and location exist
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     company = await db.companies.find_one({"id": invoice_data.company_id})
     if not company:
         raise HTTPException(status_code=400, detail="Company not found")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     location = await db.locations.find_one({"id": invoice_data.location_id})
@@ -1840,6 +2058,10 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
         raise HTTPException(status_code=400, detail="Location not found")
     
     # Check if invoice number already exists
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     existing_invoice = await db.invoices.find_one({"invoice_number": invoice_data.invoice_number})
@@ -1853,6 +2075,10 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
             if serial_number:  # Skip empty strings
                 if db is None:
                     raise HTTPException(status_code=503, detail="Database not available")
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 slot_machine = await db.slot_machines.find_one({"serial_number": serial_number})
                 if not slot_machine:
                     raise HTTPException(status_code=400, detail=f"Serial number {serial_number} not found in slot machines")
@@ -1864,12 +2090,20 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
     # Create the invoice
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.invoices.insert_one(invoice_obj.model_dump())
     
     # Update slot machines with invoice number
     if serial_numbers:
         for serial_number in serial_numbers:
             if serial_number:
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
+                if db is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
                 if db is None:
                     raise HTTPException(status_code=503, detail="Database not available")
                 await db.slot_machines.update_one(
@@ -1882,6 +2116,10 @@ async def create_invoice(invoice_data: InvoiceCreate, current_user: User = Depen
 @api_router.get("/invoices", response_model=List[Invoice])
 async def get_invoices(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "invoices")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     invoices = await db.invoices.find(query).to_list(1000)
@@ -1912,6 +2150,10 @@ async def update_invoice(invoice_id: str, invoice_data: InvoiceCreate, current_u
     update_data = invoice_data.model_dump()
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.invoices.update_one({"id": invoice_id}, {"$set": update_data})
     
     if db is None:
@@ -1926,6 +2168,10 @@ async def delete_invoice(invoice_id: str, current_user: User = Depends(get_curre
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.invoices.delete_one({"id": invoice_id})
     return {"message": "Invoice deleted successfully"}
 
@@ -1938,6 +2184,10 @@ async def create_onjn_report(report_data: ONJNReportCreate, current_user: User =
     # Check if report number already exists
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     existing_report = await db.onjn_reports.find_one({"report_number": report_data.report_number})
     if existing_report:
         raise HTTPException(status_code=400, detail="Report number already exists")
@@ -1948,12 +2198,20 @@ async def create_onjn_report(report_data: ONJNReportCreate, current_user: User =
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.onjn_reports.insert_one(report_obj.model_dump())
     return report_obj
 
 @api_router.get("/onjn-reports", response_model=List[ONJNReport])
 async def get_onjn_reports(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "onjn_reports")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     reports = await db.onjn_reports.find(query).to_list(1000)
@@ -1984,6 +2242,10 @@ async def update_onjn_report(report_id: str, report_data: ONJNReportCreate, curr
     update_data = report_data.model_dump()
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.onjn_reports.update_one({"id": report_id}, {"$set": update_data})
     
     if db is None:
@@ -1996,6 +2258,10 @@ async def delete_onjn_report(report_id: str, current_user: User = Depends(get_cu
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     await db.onjn_reports.delete_one({"id": report_id})
@@ -2013,12 +2279,20 @@ async def create_legal_document(document_data: LegalDocumentCreate, current_user
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.legal_documents.insert_one(document_obj.model_dump())
     return document_obj
 
 @api_router.get("/legal-documents", response_model=List[LegalDocument])
 async def get_legal_documents(current_user: User = Depends(get_current_user)):
     query = await filter_by_user_access(current_user, {}, "legal_documents")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     documents = await db.legal_documents.find(query).to_list(1000)
@@ -2049,6 +2323,10 @@ async def update_legal_document(document_id: str, document_data: LegalDocumentCr
     update_data = document_data.model_dump()
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.legal_documents.update_one({"id": document_id}, {"$set": update_data})
     
     if db is None:
@@ -2063,6 +2341,10 @@ async def delete_legal_document(document_id: str, current_user: User = Depends(g
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.legal_documents.delete_one({"id": document_id})
     return {"message": "Legal document deleted successfully"}
 
@@ -2074,6 +2356,10 @@ async def create_metrology(metrology_data: MetrologyCreate, current_user: User =
         created_by=current_user.id
     )
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
     await db.metrology.insert_one(metrology.model_dump())
@@ -2345,6 +2631,8 @@ async def create_jackpot(jackpot_data: JackpotCreate, current_user: User = Depen
     
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.jackpots.insert_one(jackpot_dict)
     return Jackpot(**jackpot_dict)
 
@@ -2396,6 +2684,8 @@ async def delete_jackpot(jackpot_id: str, current_user: User = Depends(get_curre
     # Delete jackpot record
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.jackpots.delete_one({"id": jackpot_id})
     return {"message": "Jackpot record deleted successfully"}
 
@@ -2433,12 +2723,16 @@ async def create_comision_date(comision_data: ComisionDateCreate, current_user: 
 
 @api_router.get("/comision-dates", response_model=List[ComisionDate])
 async def get_comision_dates(current_user: User = Depends(get_current_user)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     comision_dates = await db.comision_dates.find({}).to_list(1000)
     comision_dates = [convert_objectid_to_str(comision) for comision in comision_dates]
     
     # Add creator full name
     for comision in comision_dates:
         if comision.get("created_by"):
+            if db is None:
+                raise HTTPException(status_code=503, detail="Database not available")
             creator = await db.users.find_one({"id": comision["created_by"]})
             if creator:
                 full_name = f"{creator.get('first_name', '')} {creator.get('last_name', '')}".strip()
@@ -2490,6 +2784,8 @@ async def update_comision_date(comision_id: str, comision_data: ComisionDateCrea
     update_data = comision_data.model_dump()
     print(f"🔍 DEBUG: update_data: {update_data}")
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.comision_dates.update_one({"id": comision_id}, {"$set": update_data})
     
     # Update slot machines with new commission date
@@ -2527,6 +2823,8 @@ async def delete_comision_date(comision_id: str, current_user: User = Depends(ge
             )
     
     # Delete comision date record
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.comision_dates.delete_one({"id": comision_id})
     return {"message": "Comision date deleted successfully"}
 
@@ -2661,6 +2959,8 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: User = 
     if user_data.password is not None:
         update_data["password_hash"] = hash_password(user_data.password)
     
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.users.update_one({"id": user_id}, {"$set": update_data})
     
     updated_user = await db.users.find_one({"id": user_id})
@@ -2696,6 +2996,8 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
         raise HTTPException(status_code=404, detail="User not found")
     
     # HARD DELETE - actually remove from database
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
     await db.users.delete_one({"id": user_id})
     return {"message": "User deleted successfully"}
 
