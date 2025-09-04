@@ -20,23 +20,38 @@ from datetime import date
 import requests
 import csv
 from io import StringIO
+from contextlib import asynccontextmanager
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection - disabled for testing
-mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-try:
-    client = AsyncIOMotorClient(mongo_url)
-    db = client[os.environ.get('DB_NAME', 'casino_management')]
-    print("MongoDB connected successfully")
-except Exception as e:
-    print(f"MongoDB connection failed: {e}")
-    client = None
-    db = None
+# Global variables for database connection
+client = None
+db = None
 
-# Create the main app without a prefix
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    global client, db
+    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    try:
+        client = AsyncIOMotorClient(mongo_url)
+        db = client[os.environ.get('DB_NAME', 'casino_management')]
+        print("MongoDB connected successfully")
+    except Exception as e:
+        print(f"MongoDB connection failed: {e}")
+        client = None
+        db = None
+    
+    yield
+    
+    # Shutdown
+    if client:
+        client.close()
+        print("MongoDB connection closed")
+
+# Create the main app with lifespan handler
+app = FastAPI(lifespan=lifespan)
 
 # Add CORS middleware
 app.add_middleware(
