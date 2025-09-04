@@ -62,6 +62,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "database": "connected" if db is not None else "disconnected"}
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
