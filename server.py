@@ -804,7 +804,14 @@ async def register(user_data: UserCreate):
     # Ensure permissions is always a valid dict
     if not user_dict.get("permissions"):
         from pydantic import parse_obj_as
-        user_dict["permissions"] = UserPermissions().model_dump()
+        if user_dict.get("role") == "admin":
+            # Admin gets all permissions
+            admin_permissions = UserPermissions()
+            admin_permissions.modules = {key: True for key in admin_permissions.modules.keys()}
+            admin_permissions.actions = {key: {action: True for action in actions.keys()} for key, actions in admin_permissions.actions.items()}
+            user_dict["permissions"] = admin_permissions.model_dump()
+        else:
+            user_dict["permissions"] = UserPermissions().model_dump()
     user_obj = User(**user_dict)
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
@@ -862,7 +869,8 @@ async def login(user_data: UserLogin):
             "username": user["username"], 
             "first_name": user.get("first_name", ""),
             "last_name": user.get("last_name", ""),
-            "role": user["role"]
+            "role": user["role"],
+            "permissions": user.get("permissions", {})
         }
     }
 
