@@ -3748,7 +3748,7 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
             }}>
               <button
                 type="button"
-                onClick={handleCloseModal}
+                onClick={onClose}
                 style={{
                   padding: '12px 24px',
                   border: '2px solid var(--border-color)',
