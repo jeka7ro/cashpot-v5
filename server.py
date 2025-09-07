@@ -3494,13 +3494,6 @@ async def startup_db_client():
     admin_user = await db.users.find_one({"username": "admin"})
     if admin_user:
         logger.info("Admin user already exists")
-        # Update admin user with proper names if they're empty
-        if not admin_user.get("first_name") and not admin_user.get("last_name"):
-            await db.users.update_one(
-                {"username": "admin"},
-                {"$set": {"first_name": "Eugeniu", "last_name": "Cazmal"}}
-            )
-            logger.info("Updated admin user with default names")
     else:
         logger.info("No admin user found - please create one manually")
 

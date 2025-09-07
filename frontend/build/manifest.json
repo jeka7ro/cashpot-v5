@@ -1,7 +1,6 @@
 {
-  "short_name": "CASHPOT",
-  "name": "CASHPOT - Gaming Management System",
-  "description": "Comprehensive gaming management system for the Romanian gaming industry with ONJN compliance",
+  "short_name": "Cash Pot",
+  "name": "Cash Pot Management System",
   "icons": [
     {
       "src": "favicon.ico",
