@@ -1648,6 +1648,27 @@ async def get_slot_machines(current_user: User = Depends(get_current_user)):
     slot_machines = await db.slot_machines.find(query).to_list(1000)
     # Convert ObjectIds to strings
     slot_machines = [convert_objectid_to_str(slot_machine) for slot_machine in slot_machines]
+    
+    # Enrich with related data
+    for slot_machine in slot_machines:
+        # Get cabinet info
+        if slot_machine.get('cabinet_id'):
+            cabinet = await db.cabinets.find_one({"id": slot_machine['cabinet_id']})
+            if cabinet:
+                slot_machine['cabinet'] = convert_objectid_to_str(cabinet)
+        
+        # Get location info
+        if slot_machine.get('location_id'):
+            location = await db.locations.find_one({"id": slot_machine['location_id']})
+            if location:
+                slot_machine['location'] = convert_objectid_to_str(location)
+        
+        # Get game mix info
+        if slot_machine.get('game_mix_id'):
+            game_mix = await db.game_mixes.find_one({"id": slot_machine['game_mix_id']})
+            if game_mix:
+                slot_machine['game_mix'] = convert_objectid_to_str(game_mix)
+    
     return [SlotMachine(**slot_machine) for slot_machine in slot_machines]
 
 @api_router.get("/slot-machines/{slot_machine_id}", response_model=SlotMachine)
@@ -1657,6 +1678,29 @@ async def get_slot_machine(slot_machine_id: str, current_user: User = Depends(ge
     slot_machine = await db.slot_machines.find_one({"id": slot_machine_id})
     if not slot_machine:
         raise HTTPException(status_code=404, detail="Slot machine not found")
+    
+    # Convert ObjectId to string
+    slot_machine = convert_objectid_to_str(slot_machine)
+    
+    # Enrich with related data
+    # Get cabinet info
+    if slot_machine.get('cabinet_id'):
+        cabinet = await db.cabinets.find_one({"id": slot_machine['cabinet_id']})
+        if cabinet:
+            slot_machine['cabinet'] = convert_objectid_to_str(cabinet)
+    
+    # Get location info
+    if slot_machine.get('location_id'):
+        location = await db.locations.find_one({"id": slot_machine['location_id']})
+        if location:
+            slot_machine['location'] = convert_objectid_to_str(location)
+    
+    # Get game mix info
+    if slot_machine.get('game_mix_id'):
+        game_mix = await db.game_mixes.find_one({"id": slot_machine['game_mix_id']})
+        if game_mix:
+            slot_machine['game_mix'] = convert_objectid_to_str(game_mix)
+    
     return SlotMachine(**slot_machine)
 
 @api_router.put("/slot-machines/{slot_machine_id}", response_model=SlotMachine)
