@@ -1,11 +1,11 @@
 {
   "files": {
     "main.css": "/cashpot-v5/static/css/main.3e7276ab.css",
-    "main.js": "/cashpot-v5/static/js/main.1d4ad59e.js",
+    "main.js": "/cashpot-v5/static/js/main.57928950.js",
     "index.html": "/cashpot-v5/index.html"
   },
   "entrypoints": [
     "static/css/main.3e7276ab.css",
-    "static/js/main.1d4ad59e.js"
+    "static/js/main.57928950.js"
   ]
 }

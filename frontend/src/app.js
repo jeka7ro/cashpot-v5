@@ -4,7 +4,7 @@ import './app.css';
 
 
 
-const BACKEND_URL = 'https://cashpot-v5-production.up.railway.app';
+const BACKEND_URL = 'http://localhost:8000';
 const API = `${BACKEND_URL}/api`;
 
 // Module-level cache to survive component remounts
@@ -2180,6 +2180,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { login } = useAuth();
 
@@ -2265,16 +2266,37 @@ const Login = () => {
           
           <div className="form-group">
             <label htmlFor="password" style={{ color: 'white' }}>Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="form-input"
-              placeholder="Enter your password"
-              style={{ color: 'white' }}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="form-input"
+                placeholder="Enter your password"
+                style={{ color: 'white', paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  color: 'white',
+                  padding: '5px'
+                }}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
 
           <div className="form-group">

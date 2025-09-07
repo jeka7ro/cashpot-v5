@@ -1,1 +1,9 @@
-console.log('CASHPOT robots.txt');
+User-agent: *
+Allow: /
+
+# Block sensitive areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_redirects
+
+Sitemap: https://casino-management-system.vercel.app/sitemap.xml
