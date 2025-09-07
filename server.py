@@ -304,6 +304,10 @@ class SlotMachine(BaseModel):
     owner_company_id: Optional[str] = None  # Company that owns the slot
     lease_provider_id: Optional[str] = None  # Provider for rented slots
     lease_contract_number: Optional[str] = None  # Contract number for rented slots
+    # Related data (populated by API)
+    cabinet: Optional[dict] = None
+    location: Optional[dict] = None
+    game_mix: Optional[dict] = None
 
 class SlotMachineCreate(BaseModel):
     cabinet_id: str
