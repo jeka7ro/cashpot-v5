@@ -1,0 +1,61 @@
+[
+  {
+    "_id": "687e4cd16fd602d315ef566f",
+    "id": "effb0621-7275-4d9a-9b86-df303560b065",
+    "invoice_number": "EGT123467",
+    "company_id": "f7b45e13-45b0-49b2-9cf4-8d23936fd054",
+    "location_id": "30100914-7e53-4926-9d98-0380b7bfa4e4",
+    "serial_numbers": "188686 2547364 100393 188681 2547364-1 188686-2 2547364-2 188686-1-1 2547364-1-1",
+    "issue_date": "2025-06-29T00:00:00",
+    "due_date": "2025-08-20T00:00:00",
+    "amount": 151000.68,
+    "currency": "RON",
+    "status": "paid",
+    "description": "Aparate noi egt",
+    "created_at": "2025-07-21 14:21:05.900000",
+    "created_by": "4fd56690-a1df-4472-96e4-34fbf7c404eb",
+    "buyer_id": "f7b45e13-45b0-49b2-9cf4-8d23936fd054",
+    "seller_id": "9daeaa4e-30df-4af8-82c3-71c8b95b40bf",
+    "transaction_type": "buy",
+    "cvt_end_date": "2026-08-06T21:30:18.697572",
+    "jackpots": [
+      {
+        "name": "Mega Jackpot",
+        "type": "progressive",
+        "amount": 50000.0
+      },
+      {
+        "name": "Mini Jackpot",
+        "type": "fixed",
+        "amount": 1000.0
+      }
+    ]
+  },
+  {
+    "_id": "689396b20d3bbc1438bc7340",
+    "id": "9cc163d3-d7e8-4c4e-b34b-27e3b937ec84",
+    "invoice_number": "TEST ",
+    "company_id": "f7b45e13-45b0-49b2-9cf4-8d23936fd054",
+    "location_id": "30100914-7e53-4926-9d98-0380b7bfa4e4",
+    "buyer_id": "f7b45e13-45b0-49b2-9cf4-8d23936fd054",
+    "seller_id": "4eacb148-9942-473f-b2de-7ec62dcf60d1",
+    "transaction_type": "rent",
+    "serial_numbers": "TEST-PROPERTY-003",
+    "issue_date": "2025-08-06T00:00:00",
+    "due_date": "2025-09-05T00:00:00",
+    "amount": 450.0,
+    "currency": "EUR",
+    "status": "paid",
+    "description": "Rent",
+    "created_at": "2025-08-06T17:53:54.950000",
+    "created_by": "admin-user-id",
+    "cvt_end_date": "2026-08-06T21:30:18.698086",
+    "jackpots": [
+      {
+        "name": "Test Jackpot",
+        "type": "mystery",
+        "amount": 25000.0
+      }
+    ]
+  }
+]

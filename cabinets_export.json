@@ -1,0 +1,53 @@
+[
+  {
+    "_id": "687d93ad5c5b807aa340f694",
+    "id": "a2ecdb40-03a9-4dba-97d1-2b327a2727f1",
+    "name": "P 27/27 ST",
+    "model": "Exciter 3",
+    "provider_id": "9daeaa4e-30df-4af8-82c3-71c8b95b40bf",
+    "location_id": "30100914-7e53-4926-9d98-0380b7bfa4e4",
+    "status": "active",
+    "created_at": "2025-07-21 01:11:09.111000",
+    "created_by": "4fd56690-a1df-4472-96e4-34fbf7c404eb"
+  },
+  {
+    "_id": "687d977665eb574239afd977",
+    "id": "6f6f2e2d-1bbc-402b-8259-ec98404a9820",
+    "name": "P 32/32 H ST",
+    "model": null,
+    "provider_id": "9daeaa4e-30df-4af8-82c3-71c8b95b40bf",
+    "status": "active",
+    "created_at": "2025-07-21 01:27:18.853000",
+    "created_by": "4fd56690-a1df-4472-96e4-34fbf7c404eb"
+  },
+  {
+    "_id": "687e57f37522f98bbc89c456",
+    "id": "fbe4820c-4ead-4180-8643-0328c3f507a0",
+    "name": "Peakslant 49",
+    "model": "Curved ST",
+    "provider_id": "85d97e22-f8fc-4a6c-aa77-f097c5c0b68c",
+    "status": "active",
+    "created_at": "2025-07-21 15:08:35.339000",
+    "created_by": "4fd56690-a1df-4472-96e4-34fbf7c404eb"
+  },
+  {
+    "_id": "687e5c9f7522f98bbc89c459",
+    "id": "9518d4e1-146f-4b69-b7e5-6054d98cdef1",
+    "name": "AMS-ST50\t",
+    "model": "Slanttop 50\"",
+    "provider_id": "4eacb148-9942-473f-b2de-7ec62dcf60d1",
+    "status": "active",
+    "created_at": "2025-07-21 15:28:31.544000",
+    "created_by": "4fd56690-a1df-4472-96e4-34fbf7c404eb"
+  },
+  {
+    "_id": "687f8cd3cde79676536beee3",
+    "id": "49016260-cb80-41ee-bf10-e9e002f3c802",
+    "name": "Upright 623A",
+    "model": "CF II+",
+    "provider_id": "b7b02fac-fc7e-439c-aca7-39f08e90f595",
+    "status": "active",
+    "created_at": "2025-07-22 13:06:27.511000",
+    "created_by": "4fd56690-a1df-4472-96e4-34fbf7c404eb"
+  }
+]

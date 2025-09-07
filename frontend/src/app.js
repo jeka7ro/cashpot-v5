@@ -3317,10 +3317,10 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
                 </div>
                 <div>
                   <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '700' }}>
-                    {editingEntity ? 'Edit Slot Machine' : 'Add Slot Machine'}
+                    {entity ? 'Edit Slot Machine' : 'Add Slot Machine'}
                   </h2>
                   <p style={{ margin: '4px 0 0 0', opacity: 0.9, fontSize: '14px' }}>
-                    {editingEntity ? 'Update slot machine information' : 'Create a new slot machine entry'}
+                    {entity ? 'Update slot machine information' : 'Create a new slot machine entry'}
                   </p>
                 </div>
               </div>
@@ -3794,7 +3794,7 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
                   e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
                 }}
               >
-                {editingEntity ? 'Update Slot Machine' : 'Create Slot Machine'}
+                {entity ? 'Update Slot Machine' : 'Create Slot Machine'}
               </button>
             </div>
           </>
@@ -8250,9 +8250,9 @@ const Dashboard = () => {
       }
       
       const token = localStorage.getItem('token');
-      const method = editingEntity ? 'PUT' : 'POST';
+      const method = entity ? 'PUT' : 'POST';
       const endpoint = getEntityEndpoint(entityType);
-      const url = editingEntity ? `${API}/${endpoint}/${editingEntity.id || editingEntity._id}` : `${API}/${endpoint}`;
+      const url = entity ? `${API}/${endpoint}/${entity.id || entity._id}` : `${API}/${endpoint}`;
       
       console.log('🌐 API URL:', url);
       console.log('📤 Request body:', JSON.stringify(entityData, null, 2));
