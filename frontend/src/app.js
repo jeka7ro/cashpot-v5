@@ -9322,37 +9322,6 @@ const Dashboard = () => {
         <div className="table-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h2>{title}</h2>
-            {/* View mode toggle for slot machines */}
-            {entityType === 'slots' && viewMode && toggleViewMode && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '20px' }}>
-                <button
-                  onClick={toggleViewMode}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
-                    backgroundColor: viewMode === 'compact' ? '#3182ce' : '#e5e7eb',
-                    color: viewMode === 'compact' ? 'white' : '#374151',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = viewMode === 'compact' ? '#2563eb' : '#d1d5db';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = viewMode === 'compact' ? '#3182ce' : '#e5e7eb';
-                  }}
-                >
-                  {viewMode === 'compact' ? '📋' : '📊'}
-                  {viewMode === 'compact' ? 'Compact View' : 'Full View'}
-                </button>
-              </div>
-            )}
           </div>
           
 
@@ -10123,6 +10092,42 @@ const Dashboard = () => {
                   📊
                 </button>
               </div>
+
+              {/* View mode toggle for slot machines */}
+              {entityType === 'slots' && viewMode && toggleViewMode && (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={toggleViewMode}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '6px 10px',
+                      backgroundColor: viewMode === 'compact' ? '#3182ce' : '#e5e7eb',
+                      color: viewMode === 'compact' ? 'white' : '#374151',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '15px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      transition: 'all 0.2s',
+                      height: '30px',
+                      minWidth: '80px',
+                      justifyContent: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = viewMode === 'compact' ? '#2563eb' : '#d1d5db';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = viewMode === 'compact' ? '#3182ce' : '#e5e7eb';
+                    }}
+                    title={`Switch to ${viewMode === 'compact' ? 'Full' : 'Compact'} View`}
+                  >
+                    {viewMode === 'compact' ? '📋' : '📊'}
+                    {viewMode === 'compact' ? 'Compact' : 'Full'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -17203,57 +17208,51 @@ const Dashboard = () => {
         }
       },
       { 
-        key: 'provider_id', 
-        label: 'Provider', 
+        key: 'provider_cabinet', 
+        label: 'Provider / Cabinet', 
         render: (item) => {
           const provider = providers.find(p => p.id === item.provider_id);
-          return (
-            <div 
-              className="clickable-filter"
-              onClick={() => handleShowProviderDetails(provider)}
-              style={{ cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              {provider ? provider.name : 'N/A'}
-            </div>
-          );
-        }
-      },
-      { 
-        key: 'cabinet_id', 
-        label: 'Cabinet', 
-        render: (item) => {
           const cabinet = cabinets.find(c => c.id === item.cabinet_id);
           return (
-            <div 
-              className="clickable-filter"
-              onClick={() => handleShowCabinetDetails(cabinet)}
-              style={{ cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              {cabinet ? cabinet.name : 'N/A'}
+            <div style={{ fontSize: '0.9em' }}>
+              <div 
+                className="clickable-filter"
+                onClick={() => handleShowProviderDetails(provider)}
+                style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                {provider ? provider.name : 'N/A'}
+              </div>
+              <div 
+                className="clickable-filter"
+                onClick={() => handleShowCabinetDetails(cabinet)}
+                style={{ cursor: 'pointer', fontSize: '0.8em', color: '#666' }}
+              >
+                {cabinet ? cabinet.name : 'N/A'}
+              </div>
             </div>
           );
         }
       },
       {
-        key: 'game_mix_id',
-        label: 'Game Mix',
+        key: 'game_mix_model',
+        label: 'Game Mix / Model',
         render: (item) => {
           const gameMix = gameMixes.find(gm => gm.id === item.game_mix_id);
           return (
-            <div 
-              className="clickable-filter"
-              onClick={() => handleShowGameMixDetails(gameMix)}
-              style={{ cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              {gameMix ? gameMix.name : 'N/A'}
+            <div style={{ fontSize: '0.9em' }}>
+              <div 
+                className="clickable-filter"
+                onClick={() => handleShowGameMixDetails(gameMix)}
+                style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                {gameMix ? gameMix.name : 'N/A'}
+              </div>
+              <div style={{ fontSize: '0.8em', color: '#666' }}>
+                {item.model || 'N/A'}
+              </div>
             </div>
           );
         }
-      },
-      { 
-        key: 'model', 
-        label: 'Model', 
-        render: (item) => item.model || 'N/A'
       },
       {
         key: 'comision_date',
