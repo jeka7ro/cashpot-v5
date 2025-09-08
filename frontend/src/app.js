@@ -17387,6 +17387,107 @@ const Dashboard = () => {
             </div>
           );
         }
+      },
+      { 
+        key: 'actions', 
+        label: 'Actions', 
+        render: (item) => (
+          <div className="action-buttons">
+            {/* Kebab menu for compact view */}
+            <div className="kebab-menu" style={{ position: 'relative' }}>
+              <button 
+                className="kebab-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Toggle kebab menu for this item
+                  const kebabId = `kebab-${item.id}`;
+                  const existingMenu = document.getElementById(kebabId);
+                  if (existingMenu) {
+                    existingMenu.remove();
+                  } else {
+                    // Close other kebab menus
+                    document.querySelectorAll('.kebab-dropdown').forEach(menu => menu.remove());
+                    
+                    // Create new kebab menu
+                    const menu = document.createElement('div');
+                    menu.id = kebabId;
+                    menu.className = 'kebab-dropdown';
+                    menu.style.cssText = `
+                      position: absolute;
+                      right: 0;
+                      top: 100%;
+                      background: white;
+                      border: 1px solid #ddd;
+                      border-radius: 4px;
+                      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                      z-index: 1000;
+                      min-width: 120px;
+                    `;
+                    
+                    menu.innerHTML = `
+                      <div style="padding: 8px 0;">
+                        <button onclick="window.handleEditEntity(${JSON.stringify(item).replace(/"/g, '&quot;')}, 'slots')" style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                          ✏️ Edit
+                        </button>
+                        <button onclick="window.handleDeleteEntity('${item.id}', 'slots')" style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #dc3545;">
+                          🗑️ Delete
+                        </button>
+                        <button onclick="window.handleShowAttachments('${item.id}', 'slots')" style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                          📎 Attachments
+                        </button>
+                        <button onclick="window.handleShowHistory('${item.id}', 'slots')" style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                          ⏱️ History
+                        </button>
+                        <hr style="margin: 4px 0; border: none; border-top: 1px solid #eee;">
+                        <div style="padding: 8px 12px; display: flex; align-items: center; gap: 8px; justify-content: space-between;">
+                          <span>Status:</span>
+                          <label style="display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" ${item.status === 'active' ? 'checked' : ''} onchange="window.handleStatusToggle('${item.id}', this.checked, 'slots')">
+                            <span style="font-size: 12px;">${item.status === 'active' ? 'Active' : 'Inactive'}</span>
+                          </label>
+                        </div>
+                      </div>
+                    `;
+                    
+                    // Position relative to button
+                    const button = e.target;
+                    const rect = button.getBoundingClientRect();
+                    menu.style.position = 'fixed';
+                    menu.style.left = (rect.right - 120) + 'px';
+                    menu.style.top = (rect.bottom + 5) + 'px';
+                    
+                    document.body.appendChild(menu);
+                    
+                    // Close on click outside
+                    setTimeout(() => {
+                      document.addEventListener('click', function closeMenu() {
+                        menu.remove();
+                        document.removeEventListener('click', closeMenu);
+                      });
+                    }, 100);
+                  }
+                }}
+                title="More actions"
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: 'var(--bg-secondary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '14px',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                ⋮
+              </button>
+            </div>
+          </div>
+        )
       }
     ];
 
