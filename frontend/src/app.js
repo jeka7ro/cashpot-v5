@@ -19539,7 +19539,7 @@ const Dashboard = () => {
           <div className="header-logo">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <img 
-                src="/logo.png" 
+                src="/cashpot-v5/logo.png" 
                 alt="CASHPOT Logo" 
                 style={{
                   height: '35px',
