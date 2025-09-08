@@ -10093,7 +10093,7 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {/* View mode toggle for slot machines - AFTER timer and bar chart */}
+              {/* View mode toggle for slot machines - ROUND like other icons */}
               {entityType === 'slots' && viewMode && toggleViewMode && (
                 <div style={{ position: 'relative' }}>
                   <button
