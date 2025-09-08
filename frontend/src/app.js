@@ -8931,6 +8931,7 @@ const Dashboard = () => {
   const handleCloseAddCvtDatePopup = () => {
     setShowAddCvtDatePopup(false);
   };
+
   
   const handleCloseJackpotPopup = () => {
     setSelectedJackpots(null);
@@ -10882,15 +10883,6 @@ const Dashboard = () => {
     </div>
   );
 };
-
-// Invoice Popup Component
-const InvoicePopup = ({ invoice, onClose }) => {
-    if (!invoice) return null;
-
-    // Find location, buyer and seller based on invoice data
-    const location = locations.find(location => location.id === invoice.location_id);
-    const buyer = companies.find(company => company.id === invoice.buyer_id);
-    const seller = providers.find(provider => provider.id === invoice.seller_id);
 
     // Format amount in Romanian format (15.00,68)
     const formatAmount = (amount) => {
@@ -20121,13 +20113,6 @@ const InvoicePopup = ({ invoice, onClose }) => {
         />
       )}
 
-      {/* Invoice Popup Modal */}
-              {showInvoicePopup && !showInvoiceDetailsPage && (
-          <InvoicePopup 
-            invoice={selectedInvoice} 
-            onClose={handleCloseInvoicePopup} 
-          />
-        )}
         {showAddCvtDatePopup && (
           <AddCvtDatePopup 
             onClose={handleCloseAddCvtDatePopup} 
