@@ -10069,7 +10069,31 @@ const Dashboard = () => {
 
 
 
-              {/* View mode toggle for slot machines - ROUND like other icons */}
+              {/* All History Changes icon - same format as timer icon */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: 'var(--bg-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={() => setShowHistoryChangesPage(true)}
+                  title="All History Changes"
+                >
+                  📊
+                </button>
+              </div>
+
+              {/* View mode toggle for slot machines - AFTER timer and bar chart */}
               {entityType === 'slots' && viewMode && toggleViewMode && (
                 <div style={{ position: 'relative' }}>
                   <button
@@ -10099,87 +10123,60 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* All History Changes icon - same format as timer icon */}
-              <div style={{ position: 'relative' }}>
-                <button
-                  style={{
-                    width: '30px',
-                    height: '30px',
-                    borderRadius: '50%',
-                    border: 'none',
-                    background: 'var(--bg-secondary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '14px',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onClick={() => setShowHistoryChangesPage(true)}
-                  title="All History Changes"
-                >
-                  📊
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Active Filters Display for Slot Machines */}
-        {entityType === 'slots' && (selectedProviderAvatarFilter || selectedLocationFilter || selectedProviderFilter || selectedCabinetFilter || selectedGameMixFilter || selectedInvoiceFilter || selectedContractFilter) && (
-          <div className="active-filters-info">
-            <strong>Active Filters:</strong>
-            {selectedProviderAvatarFilter && (
-              <span className="filter-tag">
-                👤 Provider: {providers.find(p => p.id === selectedProviderAvatarFilter)?.name || 'Unknown'}
-                <button onClick={() => setSelectedProviderAvatarFilter(null)} className="filter-remove">×</button>
-              </span>
-            )}
-            {selectedLocationFilter && (
-              <span className="filter-tag">
-                📍 Location: {locations.find(l => l.id === selectedLocationFilter)?.name || 'Unknown'}
-                <button onClick={() => setSelectedLocationFilter(null)} className="filter-remove">×</button>
-              </span>
-            )}
-            {selectedProviderFilter && (
-              <span className="filter-tag">
-                🏢 Provider: {providers.find(p => p.id === selectedProviderFilter)?.name || 'Unknown'}
-                <button onClick={() => setSelectedProviderFilter(null)} className="filter-remove">×</button>
-              </span>
-            )}
-            {selectedCabinetFilter && (
-              <span className="filter-tag">
-                🏛️ Cabinet: {cabinets.find(c => c.id === selectedCabinetFilter)?.name || 'Unknown'}
-                <button onClick={() => setSelectedCabinetFilter(null)} className="filter-remove">×</button>
-              </span>
-            )}
-            {selectedGameMixFilter && (
-              <span className="filter-tag">
-                🎮 Game Mix: {gameMixes.find(gm => gm.id === selectedGameMixFilter)?.name || 'Unknown'}
-                <button onClick={() => setSelectedGameMixFilter(null)} className="filter-remove">×</button>
-              </span>
-            )}
-            {selectedInvoiceFilter && (
-              <span className="filter-tag">
-                📄 Invoice: {selectedInvoiceFilter}
-                <button onClick={() => setSelectedInvoiceFilter(null)} className="filter-remove">×</button>
-              </span>
-            )}
-            {selectedContractFilter && (
-              <span className="filter-tag">
-                📋 Contract: {selectedContractFilter}
-                <button onClick={() => setSelectedContractFilter(null)} className="filter-remove">×</button>
-              </span>
-            )}
-            {selectedCvtDateFilter && (
-              <span className="filter-tag">
-                📅 CVT Date: {formatDateDDMMYYYY(selectedCvtDateFilter)}
-                <button onClick={() => setSelectedCvtDateFilter(null)} className="filter-remove">×</button>
-              </span>
-            )}
-        </div>
-        )}
+              {/* Active Filters Display for Slot Machines - moved inside table-actions */}
+              {entityType === 'slots' && (selectedProviderAvatarFilter || selectedLocationFilter || selectedProviderFilter || selectedCabinetFilter || selectedGameMixFilter || selectedInvoiceFilter || selectedContractFilter) && (
+                <div className="active-filters-info" style={{ marginLeft: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <strong>Active Filters:</strong>
+                  {selectedProviderAvatarFilter && (
+                    <span className="filter-tag">
+                      👤 Provider: {providers.find(p => p.id === selectedProviderAvatarFilter)?.name || 'Unknown'}
+                      <button onClick={() => setSelectedProviderAvatarFilter(null)} className="filter-remove">×</button>
+                    </span>
+                  )}
+                  {selectedLocationFilter && (
+                    <span className="filter-tag">
+                      📍 Location: {locations.find(l => l.id === selectedLocationFilter)?.name || 'Unknown'}
+                      <button onClick={() => setSelectedLocationFilter(null)} className="filter-remove">×</button>
+                    </span>
+                  )}
+                  {selectedProviderFilter && (
+                    <span className="filter-tag">
+                      🏢 Provider: {providers.find(p => p.id === selectedProviderFilter)?.name || 'Unknown'}
+                      <button onClick={() => setSelectedProviderFilter(null)} className="filter-remove">×</button>
+                    </span>
+                  )}
+                  {selectedCabinetFilter && (
+                    <span className="filter-tag">
+                      🏗️ Cabinet: {cabinets.find(c => c.id === selectedCabinetFilter)?.name || 'Unknown'}
+                      <button onClick={() => setSelectedCabinetFilter(null)} className="filter-remove">×</button>
+                    </span>
+                  )}
+                  {selectedGameMixFilter && (
+                    <span className="filter-tag">
+                      🎮 Game Mix: {gameMixes.find(gm => gm.id === selectedGameMixFilter)?.name || 'Unknown'}
+                      <button onClick={() => setSelectedGameMixFilter(null)} className="filter-remove">×</button>
+                    </span>
+                  )}
+                  {selectedInvoiceFilter && (
+                    <span className="filter-tag">
+                      📄 Invoice: {selectedInvoiceFilter}
+                      <button onClick={() => setSelectedInvoiceFilter(null)} className="filter-remove">×</button>
+                    </span>
+                  )}
+                  {selectedContractFilter && (
+                    <span className="filter-tag">
+                      📋 Contract: {selectedContractFilter}
+                      <button onClick={() => setSelectedContractFilter(null)} className="filter-remove">×</button>
+                    </span>
+                  )}
+                  {selectedCvtDateFilter && (
+                    <span className="filter-tag">
+                      📅 CVT Date: {formatDateDDMMYYYY(selectedCvtDateFilter)}
+                      <button onClick={() => setSelectedCvtDateFilter(null)} className="filter-remove">×</button>
+                    </span>
+                  )}
+                </div>
+              )}
         <div className="table-content">
           {filteredData.length < data.length && (
             <div className="search-results-info">
