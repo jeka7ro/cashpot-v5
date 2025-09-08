@@ -10093,10 +10093,7 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {/* View mode toggle for slot machines - ROUND like other icons */}
-              {entityType === 'slots' && viewMode && toggleViewMode && (
-                console.log('View mode toggle rendering:', { entityType, viewMode, toggleViewMode })
-              )}
+              {/* View mode toggle for slot machines - AFTER bar chart */}
               {entityType === 'slots' && viewMode && toggleViewMode && (
                 <div style={{ position: 'relative' }}>
                   <button
@@ -10117,11 +10114,7 @@ const Dashboard = () => {
                     }}
                     title={`Switch to ${viewMode === 'compact' ? 'Full' : 'Compact'} View`}
                   >
-                    <img 
-                      src={viewMode === 'compact' ? "/cashpot-v5/compact.png" : "/cashpot-v5/full.png"} 
-                      alt="View Mode" 
-                      style={{ width: '16px', height: '16px' }}
-                    />
+                    {viewMode === 'compact' ? '📋' : '📊'}
                   </button>
                 </div>
               )}
