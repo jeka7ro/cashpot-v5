@@ -10095,6 +10095,9 @@ const Dashboard = () => {
 
               {/* View mode toggle for slot machines - ROUND like other icons */}
               {entityType === 'slots' && viewMode && toggleViewMode && (
+                console.log('View mode toggle rendering:', { entityType, viewMode, toggleViewMode })
+              )}
+              {entityType === 'slots' && viewMode && toggleViewMode && (
                 <div style={{ position: 'relative' }}>
                   <button
                     onClick={toggleViewMode}
