@@ -17211,7 +17211,7 @@ const Dashboard = () => {
           );
         }
 
-    // Define compact slot columns for compact view - SEPARATE columns
+    // Define compact slot columns for compact view - SEPARATE columns, SINGLE row
     const slotColumnsCompact = [
       {
         key: 'serial_number',
