@@ -7409,6 +7409,19 @@ const Dashboard = () => {
   // Commission Date Details Page state
   const [showCommissionDateDetailsPage, setShowCommissionDateDetailsPage] = useState(false);
   const [selectedCommissionDate, setSelectedCommissionDate] = useState(null);
+  
+  // Slot machines view mode state
+  const [slotViewMode, setSlotViewMode] = useState(() => {
+    const saved = localStorage.getItem('slotViewMode');
+    return saved || 'compact'; // Default to compact
+  });
+
+  // Function to toggle slot view mode
+  const toggleSlotViewMode = () => {
+    const newMode = slotViewMode === 'compact' ? 'full' : 'compact';
+    setSlotViewMode(newMode);
+    localStorage.setItem('slotViewMode', newMode);
+  };
   const [showJackpotDetailsPage, setShowJackpotDetailsPage] = useState(false);
   const [selectedJackpot, setSelectedJackpot] = useState(null);
   const [showMetrologyDetailsPage, setShowMetrologyDetailsPage] = useState(false);
@@ -9228,7 +9241,7 @@ const Dashboard = () => {
     setSelectedSlotsFilterType('');
     setSelectedSlotsFilterValue('');
   };
-  const renderTable = (title, data, columns, actions, entityType) => {
+  const renderTable = (title, data, columns, actions, entityType, viewMode = null, toggleViewMode = null) => {
     // Apply search filter
     let filteredData = filterData(data, searchTerm);
     
@@ -9314,6 +9327,37 @@ const Dashboard = () => {
         <div className="table-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h2>{title}</h2>
+            {/* View mode toggle for slot machines */}
+            {entityType === 'slots' && viewMode && toggleViewMode && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '20px' }}>
+                <button
+                  onClick={toggleViewMode}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    backgroundColor: viewMode === 'compact' ? '#3182ce' : '#e5e7eb',
+                    color: viewMode === 'compact' ? 'white' : '#374151',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = viewMode === 'compact' ? '#2563eb' : '#d1d5db';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = viewMode === 'compact' ? '#3182ce' : '#e5e7eb';
+                  }}
+                >
+                  {viewMode === 'compact' ? '📋' : '📊'}
+                  {viewMode === 'compact' ? 'Compact View' : 'Full View'}
+                </button>
+              </div>
+            )}
           </div>
           
 
@@ -17128,6 +17172,220 @@ const Dashboard = () => {
           );
         }
 
+    // Define compact slot columns for compact view
+    const slotColumnsCompact = [
+      {
+        key: 'serial_number',
+        label: 'Serial Number',
+        render: (item) => {
+          const location = locations.find(l => l.id === item.location_id);
+          return (
+            <div className="serial-cell" style={{ maxWidth: '120px' }}>
+              <div 
+                className="serial-primary clickable-filter"
+                onClick={() => {
+                  const slotsWithSameSerial = slotMachines.filter(slot => slot.serial_number === item.serial_number);
+                  setSelectedSlotsForDetails(slotsWithSameSerial);
+                  setShowSlotsDetailsPage(true);
+                  setSelectedSlotsFilterType('Serial Number');
+                  setSelectedSlotsFilterValue(item.serial_number || 'N/A');
+                }}
+                style={{ cursor: 'pointer', fontSize: '0.9em' }}
+              >
+                <strong>{item.serial_number || 'N/A'}</strong>
+              </div>
+              <div className="serial-secondary">
+                <small 
+                  className="location-info clickable-filter"
+                  onClick={() => handleShowLocationDetails(location)}
+                  style={{ fontSize: '0.8em', cursor: 'pointer' }}
+                >
+                  {location ? location.name : 'N/A'}
+                </small>
+              </div>
+            </div>
+          );
+        }
+      },
+      { 
+        key: 'provider_id', 
+        label: 'Provider', 
+        render: (item) => {
+          const provider = providers.find(p => p.id === item.provider_id);
+          return (
+            <div 
+              className="clickable-filter"
+              onClick={() => handleShowProviderDetails(provider)}
+              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              {provider ? provider.name : 'N/A'}
+            </div>
+          );
+        }
+      },
+      { 
+        key: 'cabinet_id', 
+        label: 'Cabinet', 
+        render: (item) => {
+          const cabinet = cabinets.find(c => c.id === item.cabinet_id);
+          return (
+            <div 
+              className="clickable-filter"
+              onClick={() => handleShowCabinetDetails(cabinet)}
+              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              {cabinet ? cabinet.name : 'N/A'}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'game_mix_id',
+        label: 'Game Mix',
+        render: (item) => {
+          const gameMix = gameMixes.find(gm => gm.id === item.game_mix_id);
+          return (
+            <div 
+              className="clickable-filter"
+              onClick={() => handleShowGameMixDetails(gameMix)}
+              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              {gameMix ? gameMix.name : 'N/A'}
+            </div>
+          );
+        }
+      },
+      { 
+        key: 'model', 
+        label: 'Model', 
+        render: (item) => item.model || 'N/A'
+      },
+      {
+        key: 'comision_date',
+        label: 'Commission Date',
+        render: (item) => {
+          const associatedComisionDates = comisionDates.filter(cd => {
+            if (!cd.serial_numbers) return false;
+            const comisionSerialNumbers = cd.serial_numbers.split(/\s+/).filter(s => s.trim());
+            return comisionSerialNumbers.includes(item.serial_number);
+          });
+          
+          if (associatedComisionDates.length === 0) {
+            return <span style={{ color: '#aaa', fontStyle: 'italic' }}>No Date</span>;
+          }
+          
+          if (associatedComisionDates.length === 1) {
+            return (
+              <span style={{ 
+                color: '#059669', 
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                fontWeight: '500'
+              }} onClick={() => {
+                setSelectedCommissionDate(associatedComisionDates[0]);
+                setShowCommissionDateDetailsPage(true);
+              }}>
+                {formatDateDDMMYYYY(associatedComisionDates[0].commission_date)}
+              </span>
+            );
+          }
+          
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ 
+                color: '#059669', 
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                fontWeight: '500'
+              }} onClick={() => {
+                setSelectedCommissionDate(associatedComisionDates[0]);
+                setShowCommissionDateDetailsPage(true);
+              }}>
+                Multiple
+              </span>
+              <div style={{
+                backgroundColor: '#059669',
+                color: 'white',
+                borderRadius: '50%',
+                width: '16px',
+                height: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                minWidth: '16px'
+              }}>
+                {associatedComisionDates.length}
+              </div>
+            </div>
+          );
+        }
+      },
+      {
+        key: 'cvt_information',
+        label: 'CVT Date',
+        render: (item) => {
+          const metrologyItem = metrology.find(m => {
+            if (!m.serial_number) return false;
+            const serialNumbersNewline = m.serial_number.split('\n').filter(s => s.trim());
+            const serialNumbersSpace = m.serial_number.split(' ').filter(s => s.trim());
+            const serialNumbers = serialNumbersNewline.length > serialNumbersSpace.length ? 
+              serialNumbersNewline : serialNumbersSpace;
+            return serialNumbers.includes(item.serial_number);
+          });
+          
+          const cvtDate = metrologyItem?.cvt_expiry_date;
+          
+          if (!cvtDate) {
+            return <span style={{ color: '#aaa', fontStyle: 'italic' }}>No CVT</span>;
+          }
+          
+          let daysLeft = null;
+          if (cvtDate) {
+            const cvtExpiryDate = new Date(cvtDate);
+            const now = new Date();
+            const diff = Math.floor((cvtExpiryDate - now) / (1000 * 60 * 60 * 24));
+            daysLeft = diff > 0 ? diff : 0;
+          }
+          
+          let daysColor = '#10b981';
+          if (daysLeft !== null) {
+            if (daysLeft <= 30) {
+              daysColor = '#ef4444';
+            } else if (daysLeft <= 90) {
+              daysColor = '#f59e0b';
+            }
+          }
+          
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span 
+                className="clickable-filter"
+                onClick={() => handleShowMetrologyDetails([metrologyItem])}
+                style={{ 
+                  fontSize: '0.9em', 
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                {formatDateDDMMYYYY(cvtDate)}
+              </span>
+              {daysLeft !== null && (
+                <span style={{
+                  color: daysColor,
+                  fontWeight: 'bold',
+                  fontSize: '0.8em'
+                }}>
+                  {daysLeft}d left
+                </span>
+              )}
+            </div>
+          );
+        }
+      }
+    ];
+
     // Define slotColumns at the beginning to be accessible in both 'slots' and 'warehouse' cases
     const slotColumns = [
             {
@@ -18013,7 +18271,11 @@ const Dashboard = () => {
         // Show only active slots (including those without status set)
         const activeSlots = slotMachines.filter(s => s.status !== 'inactive');
         const activeCount = activeSlots.length;
-        return renderTable(`Slot Machines`, activeSlots, slotColumns, {
+        
+        // Choose columns based on view mode
+        const columnsToUse = slotViewMode === 'compact' ? slotColumnsCompact : slotColumns;
+        
+        return renderTable(`Slot Machines`, activeSlots, columnsToUse, {
           onAdd: () => handleAddEntity('slots'),
           onEdit: (item) => handleEditEntity(item, 'slots'),
           onDelete: (id) => handleDeleteEntity(id, 'slots'),
@@ -18022,13 +18284,17 @@ const Dashboard = () => {
           onBulkDuplicate: () => handleBulkDuplicate('slots'),
           onExport: () => handleExport('slots'),
           onImport: () => handleImport('slots')
-        }, 'slots');
+        }, 'slots', slotViewMode, toggleSlotViewMode);
       }
       case 'warehouse': {
         // Show only inactive slots
         const warehouseSlots = slotMachines.filter(s => s.status === 'inactive');
         const warehouseCount = warehouseSlots.length;
-        return renderTable(`Warehouse`, warehouseSlots, slotColumns, {
+        
+        // Choose columns based on view mode
+        const columnsToUse = slotViewMode === 'compact' ? slotColumnsCompact : slotColumns;
+        
+        return renderTable(`Warehouse`, warehouseSlots, columnsToUse, {
           onAdd: () => handleAddEntity('slots'),
           onEdit: (item) => handleEditEntity(item, 'slots'),
           onDelete: (id) => handleDeleteEntity(id, 'slots'),
@@ -18037,7 +18303,7 @@ const Dashboard = () => {
           onBulkDuplicate: () => handleBulkDuplicate('slots'),
           onExport: () => handleExport('slots'),
           onImport: () => handleImport('slots')
-        }, 'slots');
+        }, 'slots', slotViewMode, toggleSlotViewMode);
       }
       case 'metrology': {
         // REDIRECT TO METROLOGY CVT - THE ONLY CORRECT METROLOGY TABLE
