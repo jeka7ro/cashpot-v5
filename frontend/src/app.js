@@ -2245,7 +2245,7 @@ const Login = () => {
       <div className="login-card">
         <div className="login-header" style={{ textAlign: 'center' }}>
           <img 
-            src="/cashpot-v5/logo.png" 
+            src="/cashpot-v5/logo.svg" 
             alt="CASHPOT Logo" 
             style={{
               width: '300px',

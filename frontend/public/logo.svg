@@ -1,0 +1,19 @@
+<svg width="300" height="80" viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="300" height="80" fill="#1e40af" rx="12"/>
+  
+  <!-- Casino chip icon -->
+  <circle cx="40" cy="40" r="25" fill="#fbbf24" stroke="#f59e0b" stroke-width="3"/>
+  <circle cx="40" cy="40" r="15" fill="#1e40af"/>
+  <text x="40" y="47" text-anchor="middle" fill="#fbbf24" font-family="Arial, sans-serif" font-size="16" font-weight="bold">$</text>
+  
+  <!-- CASHPOT text -->
+  <text x="80" y="35" fill="white" font-family="Arial, sans-serif" font-size="28" font-weight="bold">CASHPOT</text>
+  <text x="80" y="55" fill="#93c5fd" font-family="Arial, sans-serif" font-size="14" font-weight="500">Gaming Management System</text>
+  
+  <!-- Decorative elements -->
+  <circle cx="250" cy="20" r="3" fill="#fbbf24" opacity="0.8"/>
+  <circle cx="270" cy="35" r="2" fill="#fbbf24" opacity="0.6"/>
+  <circle cx="260" cy="50" r="2.5" fill="#fbbf24" opacity="0.7"/>
+  <circle cx="280" cy="60" r="2" fill="#fbbf24" opacity="0.5"/>
+</svg>
