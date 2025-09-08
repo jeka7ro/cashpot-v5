@@ -240,7 +240,7 @@ const Calendar = ({ value, onChange, placeholder = "Select date", allowManualInp
 const AuthContext = createContext();
 
 // Avatar Upload Component
-const AvatarUpload = ({ entityType, entityId, currentAvatar, onAvatarChange, showCustomNotification }) => {
+const AvatarUpload = ({ entityType, entityId, currentAvatar, onAvatarChange, showCustomNotification, refetchAvatar }) => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const { user } = useAuth();
@@ -304,6 +304,10 @@ const AvatarUpload = ({ entityType, entityId, currentAvatar, onAvatarChange, sho
         const attachment = await response.json();
         console.log('Upload successful:', attachment);
         onAvatarChange(attachment);
+        // Refetch avatar to ensure it's updated everywhere
+        if (refetchAvatar) {
+          refetchAvatar();
+        }
         showCustomNotification('Avatar uploaded successfully', 'success');
       } else {
         const errorText = await response.text();
@@ -1269,8 +1273,8 @@ const useAvatar = (entityType, entityId) => {
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
 
-  const fetchAvatar = async () => {
-    if (!entityType || !entityId || fetched) return;
+  const fetchAvatar = async (force = false) => {
+    if (!entityType || !entityId || (fetched && !force)) return;
     
     // Skip avatar fetch for entity types that don't exist in backend
     const skipAvatarTypes = ['jackpots', 'metrology', 'metrology2', 'commission_dates'];
@@ -1312,9 +1316,9 @@ const useAvatar = (entityType, entityId) => {
     if (!fetched) {
       fetchAvatar();
     }
-  }, []);
+  }, [entityType, entityId]);
 
-  return { avatar, setAvatar, loading, refetch: fetchAvatar };
+  return { avatar, setAvatar, loading, refetch: () => fetchAvatar(true) };
 };
 
 // Helper function to generate initials from entity name
@@ -1353,7 +1357,7 @@ const generateInitials = (name, entityType) => {
   return '?';
 };
 // Custom Avatar Editor Component
-const CustomAvatarEditor = ({ entityType, entityId, currentAvatar, onAvatarChange, entityName, showCustomNotification }) => {
+const CustomAvatarEditor = ({ entityType, entityId, currentAvatar, onAvatarChange, entityName, showCustomNotification, refetchAvatar }) => {
   const [customText, setCustomText] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
@@ -1417,6 +1421,10 @@ const CustomAvatarEditor = ({ entityType, entityId, currentAvatar, onAvatarChang
         if (response.ok) {
           const uploadedAvatar = await response.json();
           onAvatarChange(uploadedAvatar);
+          // Refetch avatar to ensure it's updated everywhere
+          if (refetchAvatar) {
+            refetchAvatar();
+          }
           showCustomNotification('Custom avatar saved successfully!', 'success');
         } else {
           throw new Error('Failed to save avatar');
@@ -4437,7 +4445,7 @@ const UserEditForm = ({ user, onSave, onClose, companies, locations, showCustomN
   });
 
   // Avatar state
-  const { avatar, setAvatar } = useAvatar('users', user?.id);
+  const { avatar, setAvatar, refetch: refetchAvatar } = useAvatar('users', user?.id);
 
   const handleAvatarChange = (newAvatar) => {
     setAvatar(newAvatar);
@@ -4691,7 +4699,20 @@ const UserEditForm = ({ user, onSave, onClose, companies, locations, showCustomN
                   currentAvatar={avatar}
                   onAvatarChange={handleAvatarChange}
                   showCustomNotification={showCustomNotification}
+                  refetchAvatar={refetchAvatar}
                 />
+                <div className="form-group">
+                  <label>Custom Avatar Editor</label>
+                  <CustomAvatarEditor
+                    entityType="users"
+                    entityId={user.id}
+                    currentAvatar={avatar}
+                    onAvatarChange={handleAvatarChange}
+                    entityName={`${user.first_name} ${user.last_name}`}
+                    showCustomNotification={showCustomNotification}
+                    refetchAvatar={refetchAvatar}
+                  />
+                </div>
               </div>
             </div>
           )}
