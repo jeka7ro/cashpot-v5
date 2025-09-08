@@ -17163,13 +17163,12 @@ const Dashboard = () => {
           );
         }
 
-    // Define compact slot columns for compact view
+    // Define compact slot columns for compact view - SEPARATE columns
     const slotColumnsCompact = [
       {
         key: 'serial_number',
         label: 'Serial Number',
         render: (item) => {
-          const location = locations.find(l => l.id === item.location_id);
           return (
             <div 
               className="clickable-filter"
@@ -17182,56 +17181,82 @@ const Dashboard = () => {
               }}
               style={{ cursor: 'pointer', fontSize: '0.9em' }}
             >
-              <strong>{item.serial_number || 'N/A'}</strong> - {location ? location.name : 'N/A'}
-            </div>
-          );
-        }
-      },
-      { 
-        key: 'provider_cabinet', 
-        label: 'Provider / Cabinet', 
-        render: (item) => {
-          const provider = providers.find(p => p.id === item.provider_id);
-          const cabinet = cabinets.find(c => c.id === item.cabinet_id);
-          return (
-            <div style={{ fontSize: '0.9em' }}>
-              <span 
-                className="clickable-filter"
-                onClick={() => handleShowProviderDetails(provider)}
-                style={{ cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                {provider ? provider.name : 'N/A'}
-              </span>
-              {' / '}
-              <span 
-                className="clickable-filter"
-                onClick={() => handleShowCabinetDetails(cabinet)}
-                style={{ cursor: 'pointer', color: '#666' }}
-              >
-                {cabinet ? cabinet.name : 'N/A'}
-              </span>
+              <strong>{item.serial_number || 'N/A'}</strong>
             </div>
           );
         }
       },
       {
-        key: 'game_mix_model',
-        label: 'Game Mix / Model',
+        key: 'location_id',
+        label: 'Location',
+        render: (item) => {
+          const location = locations.find(l => l.id === item.location_id);
+          return (
+            <div 
+              className="clickable-filter"
+              onClick={() => handleShowLocationDetails(location)}
+              style={{ cursor: 'pointer', fontSize: '0.9em' }}
+            >
+              {location ? location.name : 'N/A'}
+            </div>
+          );
+        }
+      },
+      { 
+        key: 'provider_id', 
+        label: 'Provider', 
+        render: (item) => {
+          const provider = providers.find(p => p.id === item.provider_id);
+          return (
+            <div 
+              className="clickable-filter"
+              onClick={() => handleShowProviderDetails(provider)}
+              style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9em' }}
+            >
+              {provider ? provider.name : 'N/A'}
+            </div>
+          );
+        }
+      },
+      { 
+        key: 'cabinet_id', 
+        label: 'Cabinet', 
+        render: (item) => {
+          const cabinet = cabinets.find(c => c.id === item.cabinet_id);
+          return (
+            <div 
+              className="clickable-filter"
+              onClick={() => handleShowCabinetDetails(cabinet)}
+              style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9em' }}
+            >
+              {cabinet ? cabinet.name : 'N/A'}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'game_mix_id',
+        label: 'Game Mix',
         render: (item) => {
           const gameMix = gameMixes.find(gm => gm.id === item.game_mix_id);
           return (
+            <div 
+              className="clickable-filter"
+              onClick={() => handleShowGameMixDetails(gameMix)}
+              style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9em' }}
+            >
+              {gameMix ? gameMix.name : 'N/A'}
+            </div>
+          );
+        }
+      },
+      { 
+        key: 'model', 
+        label: 'Model', 
+        render: (item) => {
+          return (
             <div style={{ fontSize: '0.9em' }}>
-              <span 
-                className="clickable-filter"
-                onClick={() => handleShowGameMixDetails(gameMix)}
-                style={{ cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                {gameMix ? gameMix.name : 'N/A'}
-              </span>
-              {' / '}
-              <span style={{ color: '#666' }}>
-                {item.model || 'N/A'}
-              </span>
+              {item.model || 'N/A'}
             </div>
           );
         }
