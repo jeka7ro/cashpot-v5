@@ -17146,6 +17146,15 @@ const Dashboard = () => {
             { key: 'provider_id', label: 'Provider', render: (item) => {
                 const provider = providers.find(p => p.id === item.provider_id);
                 const cabinet = cabinets.find(c => c.id === item.cabinet_id);
+                
+                // Debug logging
+                console.log('🔍 Slot Debug:', {
+                  serial: item.serial_number,
+                  provider_id: item.provider_id,
+                  found_provider: provider,
+                  all_providers: providers.map(p => ({ id: p.id, name: p.name }))
+                });
+                
                 return (
                   <div>
                     <div 
