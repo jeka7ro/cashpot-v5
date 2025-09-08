@@ -8932,6 +8932,60 @@ const Dashboard = () => {
     setShowAddCvtDatePopup(false);
   };
 
+  // Invoice Popup Component
+  const InvoicePopup = ({ invoice, onClose }) => {
+    if (!invoice) return null;
+
+    // Find location, buyer and seller based on invoice data
+    const location = locations.find(location => location.id === invoice.location_id);
+    const buyer = companies.find(company => company.id === invoice.buyer_id);
+    const seller = providers.find(provider => provider.id === invoice.seller_id);
+
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>Invoice Details</h2>
+            <button className="close-btn" onClick={onClose}>×</button>
+          </div>
+          <div className="modal-body">
+            <div className="invoice-details">
+              <div className="detail-row">
+                <strong>Invoice Number:</strong>
+                <span>{invoice.invoice_number}</span>
+              </div>
+              <div className="detail-row">
+                <strong>Transaction Type:</strong>
+                <span className={`transaction-type ${invoice.transaction_type}`}>
+                  {invoice.transaction_type}
+                </span>
+              </div>
+              <div className="detail-row">
+                <strong>Location:</strong>
+                <span>{location ? location.name : 'Unknown'}</span>
+              </div>
+              <div className="detail-row">
+                <strong>Buyer:</strong>
+                <span>{buyer ? buyer.name : 'Unknown'}</span>
+              </div>
+              <div className="detail-row">
+                <strong>Seller:</strong>
+                <span>{seller ? seller.name : 'Unknown'}</span>
+              </div>
+              <div className="detail-row">
+                <strong>Issue Date:</strong>
+                <span>{formatDateDDMMYYYY(invoice.issue_date)}</span>
+              </div>
+              <div className="detail-row">
+                <strong>Serial Numbers:</strong>
+                <span>{invoice.serial_numbers}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
   
   const handleCloseJackpotPopup = () => {
     setSelectedJackpots(null);
@@ -20116,6 +20170,14 @@ const Dashboard = () => {
         {showAddCvtDatePopup && (
           <AddCvtDatePopup 
             onClose={handleCloseAddCvtDatePopup} 
+          />
+        )}
+
+        {/* Invoice Popup Modal */}
+        {showInvoicePopup && !showInvoiceDetailsPage && (
+          <InvoicePopup 
+            invoice={selectedInvoice} 
+            onClose={handleCloseInvoicePopup} 
           />
         )}
         
