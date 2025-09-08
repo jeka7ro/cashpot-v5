@@ -10881,8 +10881,10 @@ const Dashboard = () => {
       )}
     </div>
   );
-  // Invoice Popup Component
-  const InvoicePopup = ({ invoice, onClose }) => {
+};
+
+// Invoice Popup Component
+const InvoicePopup = ({ invoice, onClose }) => {
     if (!invoice) return null;
 
     // Find location, buyer and seller based on invoice data
