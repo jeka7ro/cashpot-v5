@@ -10123,7 +10123,11 @@ const Dashboard = () => {
                     }}
                     title={`Switch to ${viewMode === 'compact' ? 'Full' : 'Compact'} View`}
                   >
-                    {viewMode === 'compact' ? '📋' : '📊'}
+                    <img 
+                      src="/cashpot-v5/compact.png" 
+                      alt="View Mode" 
+                      style={{ width: '16px', height: '16px' }}
+                    />
                     {viewMode === 'compact' ? 'Compact' : 'Full'}
                   </button>
                 </div>
