@@ -4701,18 +4701,6 @@ const UserEditForm = ({ user, onSave, onClose, companies, locations, showCustomN
                   showCustomNotification={showCustomNotification}
                   refetchAvatar={refetchAvatar}
                 />
-                <div className="form-group">
-                  <label>Custom Avatar Editor</label>
-                  <CustomAvatarEditor
-                    entityType="users"
-                    entityId={user.id}
-                    currentAvatar={avatar}
-                    onAvatarChange={handleAvatarChange}
-                    entityName={`${user.first_name} ${user.last_name}`}
-                    showCustomNotification={showCustomNotification}
-                    refetchAvatar={refetchAvatar}
-                  />
-                </div>
               </div>
             </div>
           )}
