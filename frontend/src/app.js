@@ -304,9 +304,11 @@ const AvatarUpload = ({ entityType, entityId, currentAvatar, onAvatarChange, sho
         const attachment = await response.json();
         console.log('Upload successful:', attachment);
         onAvatarChange(attachment);
-        // Refetch avatar to ensure it's updated everywhere
+        // Refetch avatar after a short delay to ensure backend is updated
         if (refetchAvatar) {
-          refetchAvatar();
+          setTimeout(() => {
+            refetchAvatar();
+          }, 500);
         }
         showCustomNotification('Avatar uploaded successfully', 'success');
       } else {
@@ -1303,12 +1305,12 @@ const useAvatar = (entityType, entityId) => {
           (att.filename.includes('avatar') || att.filename.includes('custom_avatar'))
         );
         setAvatar(avatarAttachment || null);
+        setFetched(true);
       }
     } catch (error) {
       console.error('Error fetching avatar:', error);
     } finally {
       setLoading(false);
-      setFetched(true);
     }
   };
 
@@ -1318,7 +1320,12 @@ const useAvatar = (entityType, entityId) => {
     }
   }, [entityType, entityId]);
 
-  return { avatar, setAvatar, loading, refetch: () => fetchAvatar(true) };
+  const refetch = () => {
+    setFetched(false);
+    fetchAvatar(true);
+  };
+
+  return { avatar, setAvatar, loading, refetch };
 };
 
 // Helper function to generate initials from entity name
