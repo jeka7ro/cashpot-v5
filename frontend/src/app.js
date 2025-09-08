@@ -10069,6 +10069,36 @@ const Dashboard = () => {
 
 
 
+              {/* View mode toggle for slot machines - ROUND like other icons */}
+              {entityType === 'slots' && viewMode && toggleViewMode && (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={toggleViewMode}
+                    style={{
+                      width: '30px',
+                      height: '30px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      background: 'var(--bg-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                      transition: 'all 0.2s ease'
+                    }}
+                    title={`Switch to ${viewMode === 'compact' ? 'Full' : 'Compact'} View`}
+                  >
+                    <img 
+                      src={viewMode === 'compact' ? "/cashpot-v5/compact.png" : "/cashpot-v5/full.png"} 
+                      alt="View Mode" 
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                  </button>
+                </div>
+              )}
+
               {/* All History Changes icon - same format as timer icon */}
               <div style={{ position: 'relative' }}>
                 <button
@@ -10092,46 +10122,6 @@ const Dashboard = () => {
                   📊
                 </button>
               </div>
-
-              {/* View mode toggle for slot machines */}
-              {entityType === 'slots' && viewMode && toggleViewMode && (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    onClick={toggleViewMode}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '6px 10px',
-                      backgroundColor: viewMode === 'compact' ? '#3182ce' : '#e5e7eb',
-                      color: viewMode === 'compact' ? 'white' : '#374151',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '15px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      transition: 'all 0.2s',
-                      height: '30px',
-                      minWidth: '80px',
-                      justifyContent: 'center'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = viewMode === 'compact' ? '#2563eb' : '#d1d5db';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = viewMode === 'compact' ? '#3182ce' : '#e5e7eb';
-                    }}
-                    title={`Switch to ${viewMode === 'compact' ? 'Full' : 'Compact'} View`}
-                  >
-                    <img 
-                      src="/cashpot-v5/compact.png" 
-                      alt="View Mode" 
-                      style={{ width: '16px', height: '16px' }}
-                    />
-                    {viewMode === 'compact' ? 'Compact' : 'Full'}
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -17184,29 +17174,18 @@ const Dashboard = () => {
         render: (item) => {
           const location = locations.find(l => l.id === item.location_id);
           return (
-            <div className="serial-cell" style={{ maxWidth: '120px' }}>
-              <div 
-                className="serial-primary clickable-filter"
-                onClick={() => {
-                  const slotsWithSameSerial = slotMachines.filter(slot => slot.serial_number === item.serial_number);
-                  setSelectedSlotsForDetails(slotsWithSameSerial);
-                  setShowSlotsDetailsPage(true);
-                  setSelectedSlotsFilterType('Serial Number');
-                  setSelectedSlotsFilterValue(item.serial_number || 'N/A');
-                }}
-                style={{ cursor: 'pointer', fontSize: '0.9em' }}
-              >
-                <strong>{item.serial_number || 'N/A'}</strong>
-              </div>
-              <div className="serial-secondary">
-                <small 
-                  className="location-info clickable-filter"
-                  onClick={() => handleShowLocationDetails(location)}
-                  style={{ fontSize: '0.8em', cursor: 'pointer' }}
-                >
-                  {location ? location.name : 'N/A'}
-                </small>
-              </div>
+            <div 
+              className="clickable-filter"
+              onClick={() => {
+                const slotsWithSameSerial = slotMachines.filter(slot => slot.serial_number === item.serial_number);
+                setSelectedSlotsForDetails(slotsWithSameSerial);
+                setShowSlotsDetailsPage(true);
+                setSelectedSlotsFilterType('Serial Number');
+                setSelectedSlotsFilterValue(item.serial_number || 'N/A');
+              }}
+              style={{ cursor: 'pointer', fontSize: '0.9em' }}
+            >
+              <strong>{item.serial_number || 'N/A'}</strong> - {location ? location.name : 'N/A'}
             </div>
           );
         }
@@ -17219,20 +17198,21 @@ const Dashboard = () => {
           const cabinet = cabinets.find(c => c.id === item.cabinet_id);
           return (
             <div style={{ fontSize: '0.9em' }}>
-              <div 
+              <span 
                 className="clickable-filter"
                 onClick={() => handleShowProviderDetails(provider)}
                 style={{ cursor: 'pointer', fontWeight: 'bold' }}
               >
                 {provider ? provider.name : 'N/A'}
-              </div>
-              <div 
+              </span>
+              {' / '}
+              <span 
                 className="clickable-filter"
                 onClick={() => handleShowCabinetDetails(cabinet)}
-                style={{ cursor: 'pointer', fontSize: '0.8em', color: '#666' }}
+                style={{ cursor: 'pointer', color: '#666' }}
               >
                 {cabinet ? cabinet.name : 'N/A'}
-              </div>
+              </span>
             </div>
           );
         }
@@ -17244,16 +17224,17 @@ const Dashboard = () => {
           const gameMix = gameMixes.find(gm => gm.id === item.game_mix_id);
           return (
             <div style={{ fontSize: '0.9em' }}>
-              <div 
+              <span 
                 className="clickable-filter"
                 onClick={() => handleShowGameMixDetails(gameMix)}
                 style={{ cursor: 'pointer', fontWeight: 'bold' }}
               >
                 {gameMix ? gameMix.name : 'N/A'}
-              </div>
-              <div style={{ fontSize: '0.8em', color: '#666' }}>
+              </span>
+              {' / '}
+              <span style={{ color: '#666' }}>
                 {item.model || 'N/A'}
-              </div>
+              </span>
             </div>
           );
         }
