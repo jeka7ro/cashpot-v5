@@ -1684,6 +1684,12 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Wrapper pentru setUser cu logging
+  const setUserWithLogging = (newUser) => {
+    console.log('👤 setUser called with:', newUser ? `${newUser.username} (${newUser.id})` : 'null');
+    setUser(newUser);
+  };
+
   // Auto-logout after 15 minutes of inactivity
   useEffect(() => {
     let inactivityTimer;
@@ -1732,7 +1738,7 @@ const AuthProvider = ({ children }) => {
           console.log('🔄 /auth/me response:', data);
           if (data.id) {
             console.log('🔄 Setting user from token:', data);
-            setUser(data);
+            setUserWithLogging(data);
           } else {
             console.log('🔄 No user ID, removing token');
             localStorage.removeItem('token');
@@ -1769,10 +1775,10 @@ const AuthProvider = ({ children }) => {
       if (meResponse.ok) {
         const userData = await meResponse.json();
         console.log('🔐 User data loaded:', userData);
-        setUser(userData);
+        setUserWithLogging(userData);
       } else {
         console.log('🔐 Using user data from login response:', data.user);
-        setUser(data.user);
+        setUserWithLogging(data.user);
       }
       
       console.log('🔐 Login successful, user set');
@@ -1783,7 +1789,7 @@ const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
-    setUser(null);
+    setUserWithLogging(null);
   };
 
   return (
