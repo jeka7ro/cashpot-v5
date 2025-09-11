@@ -8,6 +8,10 @@ const BACKEND_URL = 'http://localhost:8000';
 // Cache buster: 2024-09-04
 const API = `${BACKEND_URL}/api`;
 
+// Debug logging
+console.log('🚀 App starting with API:', API);
+console.log('🚀 Current origin:', window.location.origin);
+
 // Module-level cache to survive component remounts
 let __historyDataCache__ = null;
 let __historyFiltersCache__ = null;
