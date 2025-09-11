@@ -4,7 +4,7 @@ import './app.css';
 
 
 
-const BACKEND_URL = 'https://cashpot-v5-production.up.railway.app';
+const BACKEND_URL = 'http://localhost:8002';
 // Cache buster: 2024-09-04
 const API = `${BACKEND_URL}/api`;
 
@@ -58,9 +58,18 @@ const Calendar = ({ value, onChange, placeholder = "Select date", allowManualInp
   const parseManual = (text) => {
     const m = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
     if (!m) return null;
-    const day = parseInt(m[1], 10);
-    const monthIndex = parseInt(m[2], 10) - 1;
-    const year = parseInt(m[3], 10);
+    const day = (() => {
+      const intValue = parseInt(m[1], 10);
+      return isNaN(intValue) ? 1 : intValue;
+    })();
+    const monthIndex = (() => {
+      const intValue = parseInt(m[2], 10) - 1;
+      return isNaN(intValue) ? 0 : intValue;
+    })();
+    const year = (() => {
+      const intValue = parseInt(m[3], 10);
+      return isNaN(intValue) ? new Date().getFullYear() : intValue;
+    })();
     const dt = new Date(year, monthIndex, day);
     return Number.isNaN(dt.getTime()) ? null : dt;
   };
@@ -105,13 +114,7 @@ const Calendar = ({ value, onChange, placeholder = "Select date", allowManualInp
     <div className="calendar-container">
       <div
         className="calendar-input"
-        onClick={(e) => {
-          // Toggle only when clicking the icon area; let input focus without toggling
-          const target = e.target;
-          if (target && target.classList && target.classList.contains('calendar-icon')) {
-            setShowCalendar((s) => !s);
-          }
-        }}
+        onClick={() => setShowCalendar((s) => !s)}
       >
         {allowManualInput ? (
           <input
@@ -240,7 +243,7 @@ const Calendar = ({ value, onChange, placeholder = "Select date", allowManualInp
 const AuthContext = createContext();
 
 // Avatar Upload Component
-const AvatarUpload = ({ entityType, entityId, currentAvatar, onAvatarChange, showCustomNotification, refetchAvatar }) => {
+const AvatarUpload = ({ entityType, entityId, currentAvatar, onAvatarChange, showCustomNotification }) => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const { user } = useAuth();
@@ -304,12 +307,6 @@ const AvatarUpload = ({ entityType, entityId, currentAvatar, onAvatarChange, sho
         const attachment = await response.json();
         console.log('Upload successful:', attachment);
         onAvatarChange(attachment);
-        // Refetch avatar after a short delay to ensure backend is updated
-        if (refetchAvatar) {
-          setTimeout(() => {
-            refetchAvatar();
-          }, 500);
-        }
         showCustomNotification('Avatar uploaded successfully', 'success');
       } else {
         const errorText = await response.text();
@@ -395,11 +392,6 @@ const Breadcrumb = ({ breadcrumbPath, onNavigate, theme }) => {
       borderRadius: '8px',
       padding: '12px 16px',
       marginBottom: '16px',
-      border: '1px solid var(--border-color)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      flexWrap: 'wrap',
       minHeight: '60px', // Aceeași înălțime cu sidebar-ul
       width: '100%', // Se adaptează la lățimea containerului
       boxSizing: 'border-box' // Include padding-ul în lățime
@@ -1275,8 +1267,8 @@ const useAvatar = (entityType, entityId) => {
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
 
-  const fetchAvatar = async (force = false) => {
-    if (!entityType || !entityId || (fetched && !force)) return;
+  const fetchAvatar = async () => {
+    if (!entityType || !entityId || fetched) return;
     
     // Skip avatar fetch for entity types that don't exist in backend
     const skipAvatarTypes = ['jackpots', 'metrology', 'metrology2', 'commission_dates'];
@@ -1305,12 +1297,12 @@ const useAvatar = (entityType, entityId) => {
           (att.filename.includes('avatar') || att.filename.includes('custom_avatar'))
         );
         setAvatar(avatarAttachment || null);
-        setFetched(true);
       }
     } catch (error) {
       console.error('Error fetching avatar:', error);
     } finally {
       setLoading(false);
+      setFetched(true);
     }
   };
 
@@ -1318,14 +1310,9 @@ const useAvatar = (entityType, entityId) => {
     if (!fetched) {
       fetchAvatar();
     }
-  }, [entityType, entityId]);
+  }, []);
 
-  const refetch = () => {
-    setFetched(false);
-    fetchAvatar(true);
-  };
-
-  return { avatar, setAvatar, loading, refetch };
+  return { avatar, setAvatar, loading, refetch: fetchAvatar };
 };
 
 // Helper function to generate initials from entity name
@@ -1364,7 +1351,7 @@ const generateInitials = (name, entityType) => {
   return '?';
 };
 // Custom Avatar Editor Component
-const CustomAvatarEditor = ({ entityType, entityId, currentAvatar, onAvatarChange, entityName, showCustomNotification, refetchAvatar }) => {
+const CustomAvatarEditor = ({ entityType, entityId, currentAvatar, onAvatarChange, entityName, showCustomNotification }) => {
   const [customText, setCustomText] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
@@ -1428,10 +1415,6 @@ const CustomAvatarEditor = ({ entityType, entityId, currentAvatar, onAvatarChang
         if (response.ok) {
           const uploadedAvatar = await response.json();
           onAvatarChange(uploadedAvatar);
-          // Refetch avatar to ensure it's updated everywhere
-          if (refetchAvatar) {
-            refetchAvatar();
-          }
           showCustomNotification('Custom avatar saved successfully!', 'success');
         } else {
           throw new Error('Failed to save avatar');
@@ -1637,8 +1620,8 @@ const AvatarDisplay = ({ entityType, entityId, size = 50, entityName, rectangula
     );
   }
 
-  // Restul modulelor: avatar rotund/pătrat 50x50, cu inițiale dacă nu există poză, fundal transparent
-  let width = 50, height = 50;
+  // Restul modulelor: avatar rotund/pătrat cu dimensiunea specificată, cu inițiale dacă nu există poză, fundal transparent
+  let width = size, height = size;
   if (loading) {
     return (
       <div className="avatar-display loading" style={{ width, height }}>
@@ -1652,7 +1635,16 @@ const AvatarDisplay = ({ entityType, entityId, size = 50, entityName, rectangula
         src={`data:${avatar.mime_type};base64,${avatar.file_data}`}
         alt="Avatar"
         className="avatar-display"
-        style={{ width, height, objectFit: 'cover', borderRadius: '50%' }}
+        style={{ 
+          width, 
+          height, 
+          objectFit: 'cover', 
+          borderRadius: '50%',
+          border: '3px solid #fff',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+          margin: '0 auto',
+          display: 'block'
+        }}
       />
     );
   }
@@ -1925,7 +1917,7 @@ const BulkEditForm = ({ entityType, selectedItems, onSave, onClose, companies, l
                     onChange={(e) => handleChange(field, e.target.value)}
                   >
                     <option value="">Keep unchanged</option>
-                    {cabinets && cabinets.map(cabinet => (
+                    {cabinets && Array.isArray(cabinets) && cabinets.map(cabinet => (
                       <option key={cabinet.id} value={cabinet.id}>
                         {cabinet.name} - {cabinet.model || 'No Model'}
                       </option>
@@ -1942,7 +1934,7 @@ const BulkEditForm = ({ entityType, selectedItems, onSave, onClose, companies, l
                     onChange={(e) => handleChange(field, e.target.value)}
                   >
                     <option value="">Keep unchanged</option>
-                    {gameMixes && gameMixes.map(gameMix => (
+                    {gameMixes && Array.isArray(gameMixes) && gameMixes.map(gameMix => (
                       <option key={gameMix.id} value={gameMix.id}>
                         {gameMix.name} ({gameMix.game_count} games)
                       </option>
@@ -2043,7 +2035,11 @@ const BulkEditForm = ({ entityType, selectedItems, onSave, onClose, companies, l
                     step="0.01"
                     min="0"
                     value={formData[field] || ''}
-                    onChange={(e) => handleChange(field, parseFloat(e.target.value))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const numValue = value === '' ? '' : parseFloat(value);
+                      handleChange(field, isNaN(numValue) ? '' : numValue);
+                    }}
                     placeholder={`Enter new ${field.replace('_', ' ')} (leave empty to keep unchanged)`}
                   />
                 </div>
@@ -2057,7 +2053,11 @@ const BulkEditForm = ({ entityType, selectedItems, onSave, onClose, companies, l
                     type="number"
                     min="1"
                     value={formData[field] || ''}
-                    onChange={(e) => handleChange(field, parseInt(e.target.value))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const intValue = value === '' ? '' : parseInt(value);
+                      handleChange(field, isNaN(intValue) ? '' : intValue);
+                    }}
                     placeholder={`Enter new ${field.replace('_', ' ')} (leave empty to keep unchanged)`}
                   />
                 </div>
@@ -2263,6 +2263,9 @@ const Login = () => {
               margin: '0 auto 20px auto'
             }}
           />
+          <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+            <LastUserAvatar />
+          </div>
         </div>
         
         <form onSubmit={handleSubmit} className="login-form">
@@ -2335,7 +2338,6 @@ const Login = () => {
         </form>
         
         <div className="login-footer">
-          <p>Demo Admin: admin / password</p>
           <p>Contact your administrator for access</p>
         </div>
       </div>
@@ -2358,7 +2360,13 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
   useEffect(() => {
     // Initialize form data based on entity type
     if (entity) {
+      if (entityType === 'slots') {
+        // For slots, merge with defaults to ensure all fields are present
+        const defaultData = getDefaultFormData(entityType);
+        setFormData({ ...defaultData, ...entity });
+      } else {
       setFormData(entity);
+      }
     } else {
       setFormData(getDefaultFormData(entityType));
     }
@@ -3304,61 +3312,25 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
         );
       case 'slots':
         return (
-          <>
-            {/* Modern Modal Header */}
-            <div style={{
-              background: 'linear-gradient(135deg, var(--accent-color) 0%, #4a90e2 100%)',
-              color: 'white',
-              padding: '24px 32px',
-              borderRadius: '12px 12px 0 0',
-              margin: '-32px -32px 32px -32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  background: 'rgba(255,255,255,0.2)',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px'
-                }}>
-                  🎰
-                </div>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '700' }}>
-                    {entity ? 'Edit Slot Machine' : 'Add Slot Machine'}
-                  </h2>
-                  <p style={{ margin: '4px 0 0 0', opacity: 0.9, fontSize: '14px' }}>
-                    {entity ? 'Update slot machine information' : 'Create a new slot machine entry'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
             {/* Section 1: Basic Information */}
             <div style={{ 
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-color)',
-              borderRadius: '12px', 
-              marginBottom: '24px',
+              borderRadius: '8px', 
               overflow: 'hidden',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              width: '100%'
             }}>
               <div style={{
-                background: 'var(--bg-secondary)',
-                padding: '16px 24px',
+                background: 'var(--accent-color)',
+                padding: '16px 20px',
                 borderBottom: '1px solid var(--border-color)'
               }}>
                 <h3 style={{ 
                   margin: 0, 
-                  color: 'var(--text-primary)', 
-                  fontSize: '18px',
+                  color: 'white', 
+                  fontSize: '16px',
                   fontWeight: '600',
                   display: 'flex',
                   alignItems: 'center',
@@ -3368,228 +3340,228 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
                 </h3>
               </div>
               
-              <div style={{ padding: '24px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                  {/* Left Column - Basic Info */}
-                  <div>
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
+              <div style={{ padding: '24px', width: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', width: '100%' }}>
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Provider *
+                    </label>
+                    <select
+                      value={formData.provider_id || ''}
+                      onChange={(e) => handleChange('provider_id', e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        background: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Provider *
-                      </label>
-                      <select
-                        value={formData.provider_id || ''}
-                        onChange={(e) => handleChange('provider_id', e.target.value)}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                      >
-                        <option value="">Select Provider</option>
-                        {providers.map(provider => (
-                          <option key={provider.id} value={provider.id}>{provider.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        minWidth: '200px'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                    >
+                      <option value="">Select Provider</option>
+                      {providers.map(provider => (
+                        <option key={provider.id} value={provider.id}>{provider.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Game Mix *
+                    </label>
+                    <select
+                      value={formData.game_mix_id || ''}
+                      onChange={(e) => handleChange('game_mix_id', e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        background: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Game Mix *
-                      </label>
-                      <select
-                        value={formData.game_mix_id || ''}
-                        onChange={(e) => handleChange('game_mix_id', e.target.value)}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                      >
-                        <option value="">Select Game Mix</option>
-                        {gameMixes
-                          .filter(mix => {
-                            if (!formData.provider_id) return true;
-                            return mix.provider_id === formData.provider_id;
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        minWidth: '200px'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                    >
+                      <option value="">Select Game Mix</option>
+                      {gameMixes
+                        .filter(mix => {
+                          if (!formData.provider_id) return true;
+                          return mix.provider_id === formData.provider_id;
+                      })
+                      .map(mix => {
+                        const provider = providers.find(p => p.id === mix.provider_id);
+                        return (
+                          <option key={mix.id} value={mix.id}>
+                            {mix.name} ({provider ? provider.name : 'Unknown Provider'})
+                          </option>
+                        );
+                      })}
+                  </select>
+                  </div>
+                  
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Cabinet *
+                    </label>
+                    <select
+                      value={formData.cabinet_id || ''}
+                      onChange={(e) => handleChange('cabinet_id', e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        background: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        minWidth: '200px'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                    >
+                      <option value="">Select Cabinet</option>
+                      {cabinets
+                        .filter(cabinet => {
+                          if (!formData.provider_id) return true;
+                          return cabinet.provider_id === formData.provider_id;
                         })
-                        .map(mix => {
-                          const provider = providers.find(p => p.id === mix.provider_id);
+                        .map(cabinet => {
+                          const provider = providers.find(p => p.id === cabinet.provider_id);
                           return (
-                            <option key={mix.id} value={mix.id}>
-                              {mix.name} ({provider ? provider.name : 'Unknown Provider'})
+                            <option key={cabinet.id} value={cabinet.id}>
+                              {cabinet.name} ({provider ? provider.name : 'Unknown Provider'})
                             </option>
                           );
                         })}
                     </select>
-                    </div>
-                    
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Cabinet *
-                      </label>
-                      <select
-                        value={formData.cabinet_id || ''}
-                        onChange={(e) => handleChange('cabinet_id', e.target.value)}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                      >
-                        <option value="">Select Cabinet</option>
-                        {cabinets
-                          .filter(cabinet => {
-                            if (!formData.provider_id) return true;
-                            return cabinet.provider_id === formData.provider_id;
-                          })
-                          .map(cabinet => {
-                            const provider = providers.find(p => p.id === cabinet.provider_id);
-                            return (
-                              <option key={cabinet.id} value={cabinet.id}>
-                                {cabinet.name} ({provider ? provider.name : 'Unknown Provider'})
-                              </option>
-                            );
-                          })}
-                      </select>
-                    </div>
                   </div>
                   
-                  {/* Right Column - Basic Info */}
-                  <div>
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Serial Number *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.serial_number || ''}
+                      onChange={(e) => handleChange('serial_number', e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        background: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Serial Number *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.serial_number || ''}
-                        onChange={(e) => handleChange('serial_number', e.target.value)}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                        placeholder="Enter serial number"
-                      />
-                    </div>
-                    
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        minWidth: '200px'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                      placeholder="Enter serial number"
+                    />
+                  </div>
+                  
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Model *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.model || ''}
+                      readOnly
+                      required
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '4px',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-secondary)',
+                      fontSize: '14px',
+                      cursor: 'not-allowed',
+                      minWidth: '200px'
+                    }}
+                      placeholder="Auto-filled from cabinet"
+                    />
+                  </div>
+                  
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Location *
+                    </label>
+                    <select
+                      value={formData.location_id || ''}
+                      onChange={(e) => handleChange('location_id', e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        background: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Model *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.model || ''}
-                        readOnly
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-secondary)',
-                          color: 'var(--text-secondary)',
-                          fontSize: '14px',
-                          cursor: 'not-allowed'
-                        }}
-                        placeholder="Auto-filled from cabinet"
-                      />
-                    </div>
-                    
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Location *
-                      </label>
-                      <select
-                        value={formData.location_id || ''}
-                        onChange={(e) => handleChange('location_id', e.target.value)}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                      >
-                        <option value="">Select Location</option>
-                        {locations.map(location => (
-                          <option key={location.id} value={location.id}>{location.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        minWidth: '200px'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                    >
+                      <option value="">Select Location</option>
+                      {locations.map(location => (
+                        <option key={location.id} value={location.id}>{location.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -3599,220 +3571,158 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
             <div style={{ 
               background: 'var(--bg-primary)',
               border: '1px solid var(--border-color)',
-              borderRadius: '12px', 
-              marginBottom: '24px',
+              borderRadius: '8px', 
               overflow: 'hidden',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              width: '100%'
             }}>
               <div style={{
-                background: 'var(--bg-secondary)',
-                padding: '16px 24px',
+                background: '#28a745',
+                padding: '16px 20px',
                 borderBottom: '1px solid var(--border-color)'
               }}>
                 <h3 style={{ 
                   margin: 0, 
-                  color: 'var(--text-primary)', 
-                  fontSize: '18px',
+                  color: 'white', 
+                  fontSize: '16px',
                   fontWeight: '600',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                📄 Ownership & Documentation
-              </h3>
+                  📄 Ownership & Documentation
+                </h3>
               </div>
               
-              <div style={{ padding: '24px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                  <div>
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
+              <div style={{ padding: '24px', width: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', width: '100%' }}>
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Ownership Type *
+                    </label>
+                    <select
+                      value={formData.ownership_type || ''}
+                      onChange={(e) => handleChange('ownership_type', e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        background: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Ownership Type *
-                      </label>
-                      <select
-                        value={formData.ownership_type || ''}
-                        onChange={(e) => handleChange('ownership_type', e.target.value)}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                      >
-                        <option value="">Select Ownership Type</option>
-                        <option value="property">Property (Owned)</option>
-                        <option value="rent">Rent (Leased)</option>
-                      </select>
-                    </div>
-                    
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Owner Company
-                      </label>
-                      <select
-                        value={formData.ownership_type === 'rent' ? 
-                          (providers.find(p => p.id === formData.lease_provider_id)?.name || '') : 
-                          (companies.find(c => c.id === formData.owner_company_id)?.name || '')}
-                        onChange={(e) => {
-                          const selectedName = e.target.value;
-                          if (formData.ownership_type === 'rent') {
-                            const provider = providers.find(p => p.name === selectedName);
-                            handleChange('lease_provider_id', provider?.id || '');
-                          } else {
-                            const company = companies.find(c => c.name === selectedName);
-                            handleChange('owner_company_id', company?.id || '');
-                          }
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                      >
-                        <option value="">Select {formData.ownership_type === 'rent' ? 'Provider' : 'Company'}</option>
-                        {formData.ownership_type === 'rent' 
-                          ? providers.map(provider => (
-                              <option key={provider.id} value={provider.name}>
-                                {provider.name}
-                              </option>
-                            ))
-                          : companies.map(company => (
-                              <option key={company.id} value={company.name}>
-                                {company.name}
-                              </option>
-                            ))
-                        }
-                      </select>
-                    </div>
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        minWidth: '200px'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                    >
+                      <option value="">Select Ownership Type</option>
+                      <option value="property">Property (Owned)</option>
+                      <option value="rent">Rent (Leased)</option>
+                    </select>
                   </div>
                   
-                  <div>
-                    <div className="form-group" style={{ marginBottom: '20px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        marginBottom: '8px', 
-                        fontWeight: '600',
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Owner Company
+                    </label>
+                    <select
+                      value={formData.ownership_type === 'rent' ? 
+                        (providers.find(p => p.id === formData.lease_provider_id)?.name || '') : 
+                        (companies.find(c => c.id === formData.owner_company_id)?.name || '')}
+                      onChange={(e) => {
+                        const selectedName = e.target.value;
+                        if (formData.ownership_type === 'rent') {
+                          const provider = providers.find(p => p.name === selectedName);
+                          handleChange('lease_provider_id', provider?.id || '');
+                        } else {
+                          const company = companies.find(c => c.name === selectedName);
+                          handleChange('owner_company_id', company?.id || '');
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        background: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        fontSize: '14px'
-                      }}>
-                        Invoice Number
-                      </label>
-                      <select
-                        value={formData.invoice_number || ''}
-                        onChange={(e) => handleChange('invoice_number', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '8px',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-                      >
-                        <option value="">Select Invoice</option>
-                        {invoices.map(invoice => (
-                          <option key={invoice.id} value={invoice.invoice_number}>
-                            {invoice.invoice_number} - {invoice.amount}€
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        minWidth: '200px'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                    >
+                      <option value="">Select {formData.ownership_type === 'rent' ? 'Provider' : 'Company'}</option>
+                      {formData.ownership_type === 'rent' 
+                        ? providers.map(provider => (
+                            <option key={provider.id} value={provider.name}>
+                              {provider.name}
+                            </option>
+                          ))
+                        : companies.map(company => (
+                            <option key={company.id} value={company.name}>
+                              {company.name}
+                            </option>
+                          ))
+                      }
+                    </select>
+                  </div>
+                  
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontSize: '14px'
+                    }}>
+                      Invoice Number
+                    </label>
+                    <select
+                      value={formData.invoice_number || ''}
+                      onChange={(e) => handleChange('invoice_number', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        background: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        minWidth: '200px'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                    >
+                      <option value="">Select Invoice</option>
+                      {invoices.map(invoice => (
+                        <option key={invoice.id} value={invoice.invoice_number}>
+                          {invoice.invoice_number} - {invoice.amount}€
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
             </div>
-            
-            {/* Modern Action Buttons */}
-            <div style={{
-              display: 'flex',
-              gap: '16px',
-              justifyContent: 'flex-end',
-              padding: '24px 0',
-              borderTop: '1px solid var(--border-color)',
-              marginTop: '24px'
-            }}>
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  padding: '12px 24px',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: '8px',
-                  background: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.borderColor = 'var(--accent-color)';
-                  e.target.style.color = 'var(--accent-color)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.borderColor = 'var(--border-color)';
-                  e.target.style.color = 'var(--text-primary)';
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                style={{
-                  padding: '12px 24px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, var(--accent-color) 0%, #4a90e2 100%)',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                }}
-              >
-                {entity ? 'Update Slot Machine' : 'Create Slot Machine'}
-              </button>
-            </div>
-          </>
+          </div>
         );
 
 
@@ -4009,7 +3919,11 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
                 type="number"
                 step="0.01"
                 value={formData.amount || ''}
-                onChange={(e) => handleChange('amount', parseFloat(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const numValue = value === '' ? '' : parseFloat(value);
+                  handleChange('amount', isNaN(numValue) ? '' : numValue);
+                }}
                 required
                 placeholder="0.00"
               />
@@ -4087,7 +4001,11 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
               <input 
                 type="number" 
                 value={formData.calibration_interval || ''}
-                onChange={(e) => handleChange('calibration_interval', parseInt(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const intValue = value === '' ? '' : parseInt(value);
+                  handleChange('calibration_interval', isNaN(intValue) ? '' : intValue);
+                }}
                 required 
                 min="1" 
                 max="60" 
@@ -4250,7 +4168,11 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
                   type="number"
                   step="0.01"
                   value={formData.increment_rate || 0.1}
-                  onChange={(e) => handleChange('increment_rate', parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = value === '' ? '' : parseFloat(value);
+                    handleChange('increment_rate', isNaN(numValue) ? '' : numValue);
+                  }}
                   required
                 />
               </div>
@@ -4452,7 +4374,7 @@ const UserEditForm = ({ user, onSave, onClose, companies, locations, showCustomN
   });
 
   // Avatar state
-  const { avatar, setAvatar, refetch: refetchAvatar } = useAvatar('users', user?.id);
+  const { avatar, setAvatar } = useAvatar('users', user?.id);
 
   const handleAvatarChange = (newAvatar) => {
     setAvatar(newAvatar);
@@ -4706,7 +4628,6 @@ const UserEditForm = ({ user, onSave, onClose, companies, locations, showCustomN
                   currentAvatar={avatar}
                   onAvatarChange={handleAvatarChange}
                   showCustomNotification={showCustomNotification}
-                  refetchAvatar={refetchAvatar}
                 />
               </div>
             </div>
@@ -7020,6 +6941,7 @@ const Dashboard = () => {
   const [selectedGameMixes, setSelectedGameMixes] = useState([]);
   const [selectedModels, setSelectedModels] = useState([]);
   const [selectedJackpotTypes, setSelectedJackpotTypes] = useState([]);
+  const [selectedCommissionDates, setSelectedCommissionDates] = useState([]);
 
   // Dropdown visibility states for filters
   const [showLocationFilterDropdown, setShowLocationFilterDropdown] = useState(false);
@@ -7027,9 +6949,61 @@ const Dashboard = () => {
   const [showGameMixFilterDropdown, setShowGameMixFilterDropdown] = useState(false);
   const [showModelFilterDropdown, setShowModelFilterDropdown] = useState(false);
   const [showJackpotFilterDropdown, setShowJackpotFilterDropdown] = useState(false);
+  const [showCommissionDateFilterDropdown, setShowCommissionDateFilterDropdown] = useState(false);
 
   // Provider avatar filter state
   const [selectedProviderAvatarFilter, setSelectedProviderAvatarFilter] = useState(null);
+  
+  // Compact mode state - persist în localStorage
+  const [isCompactMode, setIsCompactMode] = useState(() => {
+    const saved = localStorage.getItem('slotsCompactMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Pagination state for slots - memorat per user
+  const [slotsPerPage, setSlotsPerPage] = useState(() => {
+    const currentUser = users.find(u => u.is_logged_in);
+    const userKey = currentUser ? `slotsPerPage_${currentUser.id}` : 'slotsPerPage_default';
+    const saved = localStorage.getItem(userKey);
+    return saved ? (() => {
+      const intValue = parseInt(saved);
+      return isNaN(intValue) ? 15 : intValue;
+    })() : 15;
+  });
+  const [currentSlotsPage, setCurrentSlotsPage] = useState(1);
+
+  // Pagination state for game_mix - memorat per user
+  const [gameMixPerPage, setGameMixPerPage] = useState(() => {
+    const currentUser = users.find(u => u.is_logged_in);
+    const userKey = currentUser ? `gameMixPerPage_${currentUser.id}` : 'gameMixPerPage_default';
+    const saved = localStorage.getItem(userKey);
+    return saved ? (() => {
+      const intValue = parseInt(saved);
+      return isNaN(intValue) ? 15 : intValue;
+    })() : 15;
+  });
+  const [currentGameMixPage, setCurrentGameMixPage] = useState(1);
+
+  // Pagination state for cabinets - memorat per user
+  const [cabinetsPerPage, setCabinetsPerPage] = useState(() => {
+    const currentUser = users.find(u => u.is_logged_in);
+    const userKey = currentUser ? `cabinetsPerPage_${currentUser.id}` : 'cabinetsPerPage_default';
+    const saved = localStorage.getItem(userKey);
+    return saved ? (() => {
+      const intValue = parseInt(saved);
+      return isNaN(intValue) ? 15 : intValue;
+    })() : 15;
+  });
+  const [currentCabinetsPage, setCurrentCabinetsPage] = useState(1);
+  
+  // Store original pagination when filter is applied
+  const [originalSlotsPerPage, setOriginalSlotsPerPage] = useState(null);
+  const [isFilterApplied, setIsFilterApplied] = useState(false);
+  
+  // Kebab menu state
+  const [showKebabMenu, setShowKebabMenu] = useState(false);
+  const [selectedKebabItem, setSelectedKebabItem] = useState(null);
+  const [kebabMenuPosition, setKebabMenuPosition] = useState({ x: 0, y: 0 });
 
   // Get filtered data for cascade filters
   const getFilteredLocations = useMemo(() => {
@@ -7243,6 +7217,64 @@ const Dashboard = () => {
     return filtered;
   }, [selectedProviderAvatarFilter, selectedLocations, selectedCabinets, selectedGameMixes, selectedModels, slotMachines, jackpots]);
 
+  const getFilteredCommissionDates = useMemo(() => {
+    // Get unique commission dates from slot machines (date only, no time)
+    let allDates = [
+      ...new Set(slotMachines.map(slot => {
+        if (!slot.commission_date) return null;
+        // Extract only the date part (YYYY-MM-DD) from ISO string
+        return slot.commission_date.split('T')[0];
+      }).filter(Boolean))
+    ];
+    let filtered = [...new Set(allDates)];
+    
+    // Only apply complex filtering if we have active filters
+    const hasActiveFilters = selectedProviderAvatarFilter || 
+                            selectedLocations.length > 0 || 
+                            selectedCabinets.length > 0 || 
+                            selectedGameMixes.length > 0 || 
+                            selectedModels.length > 0;
+    
+    if (hasActiveFilters) {
+      filtered = filtered.filter(date => 
+        slotMachines.some(slot => {
+          if (!slot.commission_date) return false;
+          const slotDate = slot.commission_date.split('T')[0];
+          if (slotDate !== date) return false;
+          
+          // Apply provider avatar filter
+          if (selectedProviderAvatarFilter && slot.provider_id !== selectedProviderAvatarFilter) {
+            return false;
+          }
+          
+          // Apply location filter
+          if (selectedLocations.length > 0 && !selectedLocations.includes(slot.location_id)) {
+            return false;
+          }
+          
+          // Apply cabinet filter
+          if (selectedCabinets.length > 0 && !selectedCabinets.includes(slot.cabinet_id)) {
+            return false;
+          }
+          
+          // Apply game mix filter
+          if (selectedGameMixes.length > 0 && !selectedGameMixes.includes(slot.game_mix_id)) {
+            return false;
+          }
+          
+          // Apply model filter
+          if (selectedModels.length > 0 && !selectedModels.includes(slot.model)) {
+            return false;
+          }
+          
+          return true;
+        })
+      );
+    }
+    
+    return filtered.sort();
+  }, [selectedProviderAvatarFilter, selectedLocations, selectedCabinets, selectedGameMixes, selectedModels, slotMachines]);
+
   // Multi-select filter handlers
   const handleLocationToggle = (locationId) => {
     setSelectedLocations(prev => 
@@ -7293,12 +7325,21 @@ const Dashboard = () => {
     );
   };
 
+  const handleCommissionDateToggle = (date) => {
+    setSelectedCommissionDates(prev => 
+      prev.includes(date) 
+        ? prev.filter(d => d !== date)
+        : [...prev, date]
+    );
+  };
+
   const clearAllFilters = () => {
     setSelectedLocations([]);
     setSelectedCabinets([]);
     setSelectedGameMixes([]);
     setSelectedModels([]);
     setSelectedJackpotTypes([]);
+    setSelectedCommissionDates([]);
   };
 
   // Close dropdowns when clicking outside
@@ -7310,6 +7351,7 @@ const Dashboard = () => {
         setShowGameMixFilterDropdown(false);
         setShowModelFilterDropdown(false);
         setShowJackpotFilterDropdown(false);
+        setShowCommissionDateFilterDropdown(false);
       }
     };
 
@@ -7404,19 +7446,6 @@ const Dashboard = () => {
   // Commission Date Details Page state
   const [showCommissionDateDetailsPage, setShowCommissionDateDetailsPage] = useState(false);
   const [selectedCommissionDate, setSelectedCommissionDate] = useState(null);
-  
-  // Slot machines view mode state
-  const [slotViewMode, setSlotViewMode] = useState(() => {
-    const saved = localStorage.getItem('slotViewMode');
-    return saved || 'compact'; // Default to compact
-  });
-
-  // Function to toggle slot view mode
-  const toggleSlotViewMode = () => {
-    const newMode = slotViewMode === 'compact' ? 'full' : 'compact';
-    setSlotViewMode(newMode);
-    localStorage.setItem('slotViewMode', newMode);
-  };
   const [showJackpotDetailsPage, setShowJackpotDetailsPage] = useState(false);
   const [selectedJackpot, setSelectedJackpot] = useState(null);
   const [showMetrologyDetailsPage, setShowMetrologyDetailsPage] = useState(false);
@@ -8140,7 +8169,7 @@ const Dashboard = () => {
       });
       return uniqueGames.size;
     })() },
-    ...(user?.permissions?.modules?.slot_machines ? [{ id: 'slots', label: 'Slots', icon: '🍒', count: slotMachines.filter(s => s.status !== 'inactive').length }] : []),
+    ...(user?.permissions?.modules?.slot_machines ? [{ id: 'slots', label: 'Slots', icon: '🍒', count: slotMachines.filter(s => s.status === 'active').length }] : []),
     ...(user?.permissions?.modules?.slot_machines ? [{ id: 'warehouse', label: 'Warehouse', icon: '📦', count: slotMachines.filter(s => s.status === 'inactive').length }] : []),
     ...(user?.permissions?.modules?.metrology ? [{ id: 'metrology2', label: 'Metrology CVT', icon: '🔬', count: metrology.length }] : []),
     ...(user?.permissions?.modules?.jackpots ? [{ id: 'jackpots', label: 'Jackpots', icon: '🎰', count: jackpots.length }] : []),
@@ -8279,9 +8308,9 @@ const Dashboard = () => {
       }
       
       const token = localStorage.getItem('token');
-      const method = entity ? 'PUT' : 'POST';
+      const method = editingEntity ? 'PUT' : 'POST';
       const endpoint = getEntityEndpoint(entityType);
-      const url = entity ? `${API}/${endpoint}/${entity.id || entity._id}` : `${API}/${endpoint}`;
+      const url = editingEntity ? `${API}/${endpoint}/${editingEntity.id || editingEntity._id}` : `${API}/${endpoint}`;
       
       console.log('🌐 API URL:', url);
       console.log('📤 Request body:', JSON.stringify(entityData, null, 2));
@@ -8825,6 +8854,7 @@ const Dashboard = () => {
 
   // Search Filter Function
   const filterData = (data, searchTerm) => {
+    if (!data || !Array.isArray(data)) return [];
     if (!searchTerm) return data;
     
     const search = searchTerm.toLowerCase();
@@ -8913,6 +8943,202 @@ const Dashboard = () => {
     setSelectedProviderAvatarFilter(selectedProviderAvatarFilter === providerId ? null : providerId);
   };
 
+  // Toggle function for compact mode
+  const toggleCompactMode = () => {
+    const newMode = !isCompactMode;
+    setIsCompactMode(newMode);
+    localStorage.setItem('slotsCompactMode', JSON.stringify(newMode));
+  };
+
+  // Pagination functions for slots
+  const handleSlotsPerPageChange = (newPerPage) => {
+    setSlotsPerPage(newPerPage);
+    setCurrentSlotsPage(1); // Reset to first page when changing per page
+    
+    // Save per user
+    const currentUser = users.find(u => u.is_logged_in);
+    const userKey = currentUser ? `slotsPerPage_${currentUser.id}` : 'slotsPerPage_default';
+    localStorage.setItem(userKey, newPerPage.toString());
+  };
+
+  // Pagination functions for game_mix
+  const handleGameMixPerPageChange = (newPerPage) => {
+    setGameMixPerPage(newPerPage);
+    setCurrentGameMixPage(1); // Reset to first page when changing per page
+    
+    // Save per user
+    const currentUser = users.find(u => u.is_logged_in);
+    const userKey = currentUser ? `gameMixPerPage_${currentUser.id}` : 'gameMixPerPage_default';
+    localStorage.setItem(userKey, newPerPage.toString());
+  };
+
+  // Pagination functions for cabinets
+  const handleCabinetsPerPageChange = (newPerPage) => {
+    setCabinetsPerPage(newPerPage);
+    setCurrentCabinetsPage(1); // Reset to first page when changing per page
+    
+    // Save per user
+    const currentUser = users.find(u => u.is_logged_in);
+    const userKey = currentUser ? `cabinetsPerPage_${currentUser.id}` : 'cabinetsPerPage_default';
+    localStorage.setItem(userKey, newPerPage.toString());
+  };
+
+  // Function to apply filter (set to "all" and store original)
+  const applySlotsFilter = () => {
+    if (!isFilterApplied) {
+      setOriginalSlotsPerPage(slotsPerPage);
+      setSlotsPerPage('all');
+      setIsFilterApplied(true);
+    }
+  };
+
+  // Function to remove filter (restore original pagination)
+  const removeSlotsFilter = () => {
+    if (isFilterApplied && originalSlotsPerPage !== null) {
+      setSlotsPerPage(originalSlotsPerPage);
+      setOriginalSlotsPerPage(null);
+      setIsFilterApplied(false);
+      setCurrentSlotsPage(1);
+    }
+  };
+
+  const handleSlotsPageChange = (newPage) => {
+    setCurrentSlotsPage(newPage);
+  };
+
+  const handleGameMixPageChange = (newPage) => {
+    setCurrentGameMixPage(newPage);
+  };
+
+  const handleCabinetsPageChange = (newPage) => {
+    setCurrentCabinetsPage(newPage);
+  };
+
+  // Calculate paginated slots
+  const getPaginatedSlots = (slots) => {
+    if (!slots || !Array.isArray(slots)) {
+      return [];
+    }
+    if (slotsPerPage === 'all') {
+      return slots;
+    }
+    const startIndex = (currentSlotsPage - 1) * slotsPerPage;
+    const endIndex = startIndex + slotsPerPage;
+    return slots.slice(startIndex, endIndex);
+  };
+
+  const getPaginatedGameMix = (gameMix) => {
+    if (!gameMix || !Array.isArray(gameMix)) {
+      return [];
+    }
+    if (gameMixPerPage === 'all') {
+      return gameMix;
+    }
+    const startIndex = (currentGameMixPage - 1) * gameMixPerPage;
+    const endIndex = startIndex + gameMixPerPage;
+    return gameMix.slice(startIndex, endIndex);
+  };
+
+  const getPaginatedCabinets = (cabinets) => {
+    if (!cabinets || !Array.isArray(cabinets)) {
+      return [];
+    }
+    if (cabinetsPerPage === 'all') {
+      return cabinets;
+    }
+    const startIndex = (currentCabinetsPage - 1) * cabinetsPerPage;
+    const endIndex = startIndex + cabinetsPerPage;
+    return cabinets.slice(startIndex, endIndex);
+  };
+
+  // Calculate total pages
+  const getTotalSlotsPages = (slots) => {
+    if (!slots || !Array.isArray(slots)) {
+      return 1;
+    }
+    if (slotsPerPage === 'all') {
+      return 1;
+    }
+    return Math.ceil(slots.length / slotsPerPage);
+  };
+
+  const getTotalGameMixPages = (gameMix) => {
+    if (!gameMix || !Array.isArray(gameMix)) {
+      return 1;
+    }
+    if (gameMixPerPage === 'all') {
+      return 1;
+    }
+    return Math.ceil(gameMix.length / gameMixPerPage);
+  };
+
+  const getTotalCabinetsPages = (cabinets) => {
+    if (!cabinets || !Array.isArray(cabinets)) {
+      return 1;
+    }
+    if (cabinetsPerPage === 'all') {
+      return 1;
+    }
+    return Math.ceil(cabinets.length / cabinetsPerPage);
+  };
+
+  // Close kebab menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showKebabMenu && !event.target.closest('.kebab-menu-dropdown') && !event.target.closest('.kebab-button')) {
+        setShowKebabMenu(false);
+        setSelectedKebabItem(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showKebabMenu]);
+
+  // Update pagination when user changes
+  useEffect(() => {
+    const currentUser = users.find(u => u.is_logged_in);
+    const userKey = currentUser ? `slotsPerPage_${currentUser.id}` : 'slotsPerPage_default';
+    const saved = localStorage.getItem(userKey);
+    if (saved) {
+      const intValue = parseInt(saved);
+      setSlotsPerPage(isNaN(intValue) ? 15 : intValue);
+    } else {
+      setSlotsPerPage(15); // Default value
+    }
+    setCurrentSlotsPage(1); // Reset to first page when user changes
+  }, [users]);
+
+  // Handle slot status update
+  const handleUpdateSlotStatus = async (slotId, newStatus) => {
+    try {
+      const response = await fetch(`${API}/slots/${slotId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setSlotMachines(prev => 
+          prev.map(slot => 
+            slot.id === slotId ? { ...slot, status: newStatus } : slot
+          )
+        );
+        showCustomNotification(`Slot ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`, 'success');
+      } else {
+        showCustomNotification('Failed to update slot status', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating slot status:', error);
+      showCustomNotification('Error updating slot status', 'error');
+    }
+  };
+
   const handleInvoiceClick = (invoice) => {
     setSelectedInvoice(invoice);
     setShowInvoiceDetailsPage(true);
@@ -8930,61 +9156,6 @@ const Dashboard = () => {
 
   const handleCloseAddCvtDatePopup = () => {
     setShowAddCvtDatePopup(false);
-  };
-
-  // Invoice Popup Component
-  const InvoicePopup = ({ invoice, onClose }) => {
-    if (!invoice) return null;
-
-    // Find location, buyer and seller based on invoice data
-    const location = locations.find(location => location.id === invoice.location_id);
-    const buyer = companies.find(company => company.id === invoice.buyer_id);
-    const seller = providers.find(provider => provider.id === invoice.seller_id);
-
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>Invoice Details</h2>
-            <button className="close-btn" onClick={onClose}>×</button>
-          </div>
-          <div className="modal-body">
-            <div className="invoice-details">
-              <div className="detail-row">
-                <strong>Invoice Number:</strong>
-                <span>{invoice.invoice_number}</span>
-              </div>
-              <div className="detail-row">
-                <strong>Transaction Type:</strong>
-                <span className={`transaction-type ${invoice.transaction_type}`}>
-                  {invoice.transaction_type}
-                </span>
-              </div>
-              <div className="detail-row">
-                <strong>Location:</strong>
-                <span>{location ? location.name : 'Unknown'}</span>
-              </div>
-              <div className="detail-row">
-                <strong>Buyer:</strong>
-                <span>{buyer ? buyer.name : 'Unknown'}</span>
-              </div>
-              <div className="detail-row">
-                <strong>Seller:</strong>
-                <span>{seller ? seller.name : 'Unknown'}</span>
-              </div>
-              <div className="detail-row">
-                <strong>Issue Date:</strong>
-                <span>{formatDateDDMMYYYY(invoice.issue_date)}</span>
-              </div>
-              <div className="detail-row">
-                <strong>Serial Numbers:</strong>
-                <span>{invoice.serial_numbers}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   };
   
   const handleCloseJackpotPopup = () => {
@@ -9291,7 +9462,12 @@ const Dashboard = () => {
     setSelectedSlotsFilterType('');
     setSelectedSlotsFilterValue('');
   };
-  const renderTable = (title, data, columns, actions, entityType, viewMode = null, toggleViewMode = null) => {
+  const renderTable = (title, data, columns, actions, entityType, originalData = null) => {
+    // Ensure data is an array
+    if (!data || !Array.isArray(data)) {
+      data = [];
+    }
+    
     // Apply search filter
     let filteredData = filterData(data, searchTerm);
     
@@ -9314,6 +9490,13 @@ const Dashboard = () => {
         filteredData = filteredData.filter(slot => 
           selectedJackpotTypes.includes(slot.jackpot_name)
         );
+      }
+      if (selectedCommissionDates.length > 0) {
+        filteredData = filteredData.filter(slot => {
+          if (!slot.commission_date) return false;
+          const slotDate = slot.commission_date.split('T')[0];
+          return selectedCommissionDates.includes(slotDate);
+        });
       }
       
       // Apply provider avatar filter
@@ -9373,12 +9556,15 @@ const Dashboard = () => {
     }
     
     return (
-      <div className="table-container">
+      <div>
+        <div className="table-container" style={{
+          maxHeight: (entityType === 'slots' || entityType === 'cabinets' || entityType === 'gamemixes') ? 'calc(12 * 65px + 140px)' : 'none', // 12 rânduri × 65px înălțime + header + padding
+          overflowY: (entityType === 'slots' || entityType === 'cabinets' || entityType === 'gamemixes') ? 'auto' : 'visible'
+        }}>
         <div className="table-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h2>{title}</h2>
           </div>
-          
 
           <div className="table-actions">
             <div className="search-container">
@@ -9470,7 +9656,10 @@ const Dashboard = () => {
                   const selectedProvider = prompt('Select a provider to view change history:\n\n' + providerNames.map((name, index) => `${index + 1}. ${name}`).join('\n') + '\n\nEnter the number:');
                   
                   if (selectedProvider && !isNaN(selectedProvider)) {
-                    const providerIndex = parseInt(selectedProvider) - 1;
+                    const providerIndex = (() => {
+                      const intValue = parseInt(selectedProvider);
+                      return isNaN(intValue) ? -1 : intValue - 1;
+                    })();
                     if (providerIndex >= 0 && providerIndex < providers.length) {
                       const selectedProviderData = providers[providerIndex];
                       handleOpenChangeHistory('providers', selectedProviderData.id);
@@ -10009,8 +10198,110 @@ const Dashboard = () => {
                 )}
               </div>
 
+              {/* Commission Date Filter Button */}
+              <div className="filter-dropdown-container" style={{ position: 'relative' }}>
+                <button
+                  onClick={() => {
+                    setShowCommissionDateFilterDropdown(!showCommissionDateFilterDropdown);
+                    setShowLocationFilterDropdown(false);
+                    setShowCabinetFilterDropdown(false);
+                    setShowGameMixFilterDropdown(false);
+                    setShowModelFilterDropdown(false);
+                    setShowJackpotFilterDropdown(false);
+                  }}
+                  style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: selectedCommissionDates.length > 0 ? 'var(--accent-color)' : 'var(--bg-secondary)',
+                    color: selectedCommissionDates.length > 0 ? 'white' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
+                  }}
+                  title={`Commission Dates (${selectedCommissionDates.length})`}
+                >
+                  📅
+                </button>
+                {showCommissionDateFilterDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    zIndex: 9999,
+                    minWidth: '120px',
+                    maxHeight: '240px',
+                    overflowY: 'auto',
+                    marginTop: '6px',
+                    padding: '4px 0'
+                  }}>
+                    {getFilteredCommissionDates.length === 0 ? (
+                      <div style={{ padding: '8px 16px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        No commission dates available
+                      </div>
+                    ) : (
+                      getFilteredCommissionDates.map(date => (
+                        <div
+                          key={date}
+                          onClick={() => handleCommissionDateToggle(date)}
+                          style={{
+                            padding: '10px 16px',
+                            cursor: 'pointer',
+                            background: selectedCommissionDates.includes(date) ? 'var(--accent-color)' : 'transparent',
+                            color: selectedCommissionDates.includes(date) ? 'white' : 'var(--text-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            fontSize: '14px',
+                            fontWeight: 'normal',
+                            transition: 'all 0.2s ease',
+                            borderLeft: selectedCommissionDates.includes(date) ? '3px solid rgba(255,255,255,0.3)' : '3px solid transparent'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!selectedCommissionDates.includes(date)) {
+                              e.target.style.background = 'var(--bg-secondary)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!selectedCommissionDates.includes(date)) {
+                              e.target.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          <div style={{
+                            width: '16px',
+                            height: '16px',
+                            border: '2px solid',
+                            borderColor: selectedCommissionDates.includes(date) ? 'var(--accent-color)' : 'var(--border-color)',
+                            background: selectedCommissionDates.includes(date) ? 'var(--accent-color)' : 'transparent',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            fontWeight: 'normal',
+                            color: selectedCommissionDates.includes(date) ? 'white' : 'transparent'
+                          }}>
+                            {selectedCommissionDates.includes(date) && '✓'}
+                          </div>
+                          {date}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Clear All Filters Button */}
-              {(selectedLocations.length > 0 || selectedCabinets.length > 0 || selectedGameMixes.length > 0 || selectedModels.length > 0 || selectedJackpotTypes.length > 0) && (
+              {(selectedLocations.length > 0 || selectedCabinets.length > 0 || selectedGameMixes.length > 0 || selectedModels.length > 0 || selectedJackpotTypes.length > 0 || selectedCommissionDates.length > 0) && (
                 <button
                   onClick={clearAllFilters}
                   style={{
@@ -10147,91 +10438,95 @@ const Dashboard = () => {
                   📊
                 </button>
               </div>
-
-              {/* View mode toggle for slot machines - AFTER bar chart */}
-              {entityType === 'slots' && viewMode && toggleViewMode && (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    onClick={toggleViewMode}
-                    style={{
-                      width: '30px',
-                      height: '30px',
-                      borderRadius: '50%',
-                      border: 'none',
-                      background: 'var(--bg-secondary)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '14px',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-                      transition: 'all 0.2s ease'
-                    }}
-                    title={`Switch to ${viewMode === 'compact' ? 'Full' : 'Compact'} View`}
-                  >
-                    <img 
-                      src={viewMode === 'compact' ? "/cashpot-v5/compact2.png" : "/cashpot-v5/full.png"} 
-                      alt="View Mode" 
-                      style={{ width: '16px', height: '16px' }}
-                    />
-                  </button>
-                </div>
-              )}
-
-              {/* Active Filters Display for Slot Machines - moved inside table-actions */}
-              {entityType === 'slots' && (selectedProviderAvatarFilter || selectedLocationFilter || selectedProviderFilter || selectedCabinetFilter || selectedGameMixFilter || selectedInvoiceFilter || selectedContractFilter) && (
-                <div className="active-filters-info" style={{ marginLeft: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <strong>Active Filters:</strong>
-                  {selectedProviderAvatarFilter && (
-                    <span className="filter-tag">
-                      👤 Provider: {providers.find(p => p.id === selectedProviderAvatarFilter)?.name || 'Unknown'}
-                      <button onClick={() => setSelectedProviderAvatarFilter(null)} className="filter-remove">×</button>
-                    </span>
-                  )}
-                  {selectedLocationFilter && (
-                    <span className="filter-tag">
-                      📍 Location: {locations.find(l => l.id === selectedLocationFilter)?.name || 'Unknown'}
-                      <button onClick={() => setSelectedLocationFilter(null)} className="filter-remove">×</button>
-                    </span>
-                  )}
-                  {selectedProviderFilter && (
-                    <span className="filter-tag">
-                      🏢 Provider: {providers.find(p => p.id === selectedProviderFilter)?.name || 'Unknown'}
-                      <button onClick={() => setSelectedProviderFilter(null)} className="filter-remove">×</button>
-                    </span>
-                  )}
-                  {selectedCabinetFilter && (
-                    <span className="filter-tag">
-                      🏗️ Cabinet: {cabinets.find(c => c.id === selectedCabinetFilter)?.name || 'Unknown'}
-                      <button onClick={() => setSelectedCabinetFilter(null)} className="filter-remove">×</button>
-                    </span>
-                  )}
-                  {selectedGameMixFilter && (
-                    <span className="filter-tag">
-                      🎮 Game Mix: {gameMixes.find(gm => gm.id === selectedGameMixFilter)?.name || 'Unknown'}
-                      <button onClick={() => setSelectedGameMixFilter(null)} className="filter-remove">×</button>
-                    </span>
-                  )}
-                  {selectedInvoiceFilter && (
-                    <span className="filter-tag">
-                      📄 Invoice: {selectedInvoiceFilter}
-                      <button onClick={() => setSelectedInvoiceFilter(null)} className="filter-remove">×</button>
-                    </span>
-                  )}
-                  {selectedContractFilter && (
-                    <span className="filter-tag">
-                      📋 Contract: {selectedContractFilter}
-                      <button onClick={() => setSelectedContractFilter(null)} className="filter-remove">×</button>
-                    </span>
-                  )}
-                  {selectedCvtDateFilter && (
-                    <span className="filter-tag">
-                      📅 CVT Date: {formatDateDDMMYYYY(selectedCvtDateFilter)}
-                      <button onClick={() => setSelectedCvtDateFilter(null)} className="filter-remove">×</button>
-                    </span>
-                  )}
-                </div>
-              )}
+              
+              {/* Compact Mode Toggle Button */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: isCompactMode ? 'var(--accent-color)' : 'var(--bg-secondary)',
+                    color: isCompactMode ? 'white' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={toggleCompactMode}
+                  title={`Switch to ${isCompactMode ? 'Full' : 'Compact'} View`}
+                >
+                  {isCompactMode ? '📋' : '📝'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Active Filters Display for Slot Machines */}
+        {entityType === 'slots' && (selectedProviderAvatarFilter || selectedLocationFilter || selectedProviderFilter || selectedCabinetFilter || selectedGameMixFilter || selectedInvoiceFilter || selectedContractFilter || selectedCommissionDates.length > 0) && (
+          <div className="active-filters-info">
+            <strong>Active Filters:</strong>
+            {selectedProviderAvatarFilter && (
+              <span className="filter-tag">
+                👤 Provider: {providers.find(p => p.id === selectedProviderAvatarFilter)?.name || 'Unknown'}
+                <button onClick={() => setSelectedProviderAvatarFilter(null)} className="filter-remove">×</button>
+              </span>
+            )}
+            {selectedLocationFilter && (
+              <span className="filter-tag">
+                📍 Location: {locations.find(l => l.id === selectedLocationFilter)?.name || 'Unknown'}
+                <button onClick={() => setSelectedLocationFilter(null)} className="filter-remove">×</button>
+              </span>
+            )}
+            {selectedProviderFilter && (
+              <span className="filter-tag">
+                🏢 Provider: {providers.find(p => p.id === selectedProviderFilter)?.name || 'Unknown'}
+                <button onClick={() => setSelectedProviderFilter(null)} className="filter-remove">×</button>
+              </span>
+            )}
+            {selectedCabinetFilter && (
+              <span className="filter-tag">
+                🏛️ Cabinet: {cabinets.find(c => c.id === selectedCabinetFilter)?.name || 'Unknown'}
+                <button onClick={() => setSelectedCabinetFilter(null)} className="filter-remove">×</button>
+              </span>
+            )}
+            {selectedGameMixFilter && (
+              <span className="filter-tag">
+                🎮 Game Mix: {gameMixes.find(gm => gm.id === selectedGameMixFilter)?.name || 'Unknown'}
+                <button onClick={() => setSelectedGameMixFilter(null)} className="filter-remove">×</button>
+              </span>
+            )}
+            {selectedInvoiceFilter && (
+              <span className="filter-tag">
+                📄 Invoice: {selectedInvoiceFilter}
+                <button onClick={() => setSelectedInvoiceFilter(null)} className="filter-remove">×</button>
+              </span>
+            )}
+            {selectedContractFilter && (
+              <span className="filter-tag">
+                📋 Contract: {selectedContractFilter}
+                <button onClick={() => setSelectedContractFilter(null)} className="filter-remove">×</button>
+              </span>
+            )}
+            {selectedCvtDateFilter && (
+              <span className="filter-tag">
+                📅 CVT Date: {formatDateDDMMYYYY(selectedCvtDateFilter)}
+                <button onClick={() => setSelectedCvtDateFilter(null)} className="filter-remove">×</button>
+              </span>
+            )}
+            {selectedCommissionDates.length > 0 && (
+              <span className="filter-tag">
+                📅 Commission Dates: {selectedCommissionDates.join(', ')}
+                <button onClick={() => setSelectedCommissionDates([])} className="filter-remove">×</button>
+              </span>
+            )}
+        </div>
+        )}
         <div className="table-content">
           {filteredData.length < data.length && (
             <div className="search-results-info">
@@ -10288,130 +10583,7 @@ const Dashboard = () => {
                       {entityType === 'slots' || entityType === 'metrology' ? (
                         <>
                           <div className="table-row-actions-vertical" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
-                            <button 
-                              className="btn-edit"
-                              onClick={() => actions?.onEdit && actions.onEdit(item)}
-                              title="Edit"
-                              style={{ 
-                                fontSize: '12px', 
-                                padding: '2px 4px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: '32px',
-                                height: '32px',
-                                border: 'none',
-                                backgroundColor: '#d1e7ff',
-                                borderRadius: '50%',
-                                color: '#1e3a8a',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              ✏️
-                            </button>
-                            <button 
-                              className="btn-delete"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteEntity(item.id, entityType);
-                              }}
-                              title={`Delete ${entityType === 'slots' ? 'Slot Machine' : entityType === 'metrology' ? 'CVT Record' : entityType === 'companies' ? 'Company' : entityType === 'locations' ? 'Location' : entityType === 'providers' ? 'Provider' : entityType === 'cabinets' ? 'Cabinet' : entityType === 'gamemixes' ? 'Game Mix' : entityType === 'jackpots' ? 'Jackpot' : entityType === 'invoices' ? 'Invoice' : entityType === 'onjn' ? 'ONJN Report' : entityType === 'legal' ? 'Legal Document' : entityType === 'users' ? 'User' : 'Record'}`}
-                              style={{ 
-                                fontSize: '12px', 
-                                padding: '2px 4px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: '32px',
-                                height: '32px',
-                                border: 'none',
-                                backgroundColor: '#d1e7ff',
-                                borderRadius: '50%',
-                                color: '#1e3a8a',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              🗑️
-                            </button>
-                              {entityType === 'slots' ? (
-                            <AttachmentIndicator slotId={item.id} onClick={() => handleOpenSlotAttachments(item.id)} />
-                              ) : (
-                                <GenericAttachmentIndicator 
-                                  entityType={item.entityType === 'comision_dates' ? 'comision_dates' : (item.type === 'comision_date' ? 'comision_dates' : (entityType === 'onjn' ? 'onjn_reports' : entityType))} 
-                                  entityId={item.id} 
-                                  onClick={() => handleOpenEntityAttachments(item.entityType === 'comision_dates' ? 'comision_dates' : (item.type === 'comision_date' ? 'comision_dates' : (entityType === 'onjn' ? 'onjn_reports' : entityType)), item.id)} 
-                                />
-                              )}
-                            {(() => {
-                              const changes = scheduledChanges.filter(change => change.entityType === 'slots' && change.itemId === item.id);
-                                if (changes.length > 0) {
-                              const change = changes[0];
-                              const scheduledDateTime = new Date(change.scheduledDateTime);
-                                  const msLeft = scheduledDateTime.getTime() - timerTick;
-                              
-                              const formatCountdown = (ms) => {
-                                if (ms <= 0) return '00:00';
-                                const totalSeconds = Math.floor(ms / 1000);
-                                const minutes = Math.floor(totalSeconds / 60);
-                                const seconds = totalSeconds % 60;
-                                return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                              };
-                              
-                              return (
-                                <button 
-                                  className="btn-timer"
-                                  onClick={() => setShowScheduledChangeForSlot(item.id)}
-                                      title="View scheduled action"
-                                  style={{ 
-                                    fontSize: '12px', 
-                                    padding: '2px 4px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '32px',
-                                    height: '32px',
-                                    border: 'none',
-                                    backgroundColor: '#d1e7ff',
-                                    borderRadius: '50%',
-                                    color: '#1e3a8a',
-                                    cursor: 'pointer',
-                                    position: 'relative'
-                                  }}
-                                >
-                                  ⏱️
-                                    </button>
-                                  );
-                                } else {
-                                  return (
-                                    <button 
-                                      className="btn-timer"
-                                      onClick={() => {
-                                        setScheduleChangeData(item);
-                                        setShowScheduleChangeModal(true);
-                                      }}
-                                      title="Schedule Changes for Slot Machine"
-                                      style={{ 
-                                        fontSize: '12px', 
-                                        padding: '2px 4px',
-                                        display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                        width: '32px',
-                                        height: '32px',
-                                        border: 'none',
-                                        backgroundColor: '#d1e7ff',
-                                        borderRadius: '50%',
-                                        color: '#1e3a8a',
-                                        cursor: 'pointer'
-                                      }}
-                                    >
-                                      ⏱️
-                                </button>
-                              );
-                                }
-                            })()}
+                            {/* Butoanele de acțiuni sunt eliminate din tabelul normal - rămân doar în kebab menu */}
                           </div>
                           {(entityType === 'slots' || entityType === 'warehouse') && (
                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -10507,7 +10679,6 @@ const Dashboard = () => {
                                  })()}
                             </div>
                           )}
-                        </div>
                         </>
                       ) : (
                       <div className="table-row-actions" style={{
@@ -10608,6 +10779,155 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
+        </div>
+        
+        {/* Pagination Controls for Slots, Game Mix, and Cabinets - Container separat sub tabel */}
+        {(entityType === 'slots' || entityType === 'gamemixes' || entityType === 'cabinets') && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            gap: '15px',
+            padding: '16px 0',
+            borderTop: '1px solid var(--border-color)',
+            marginTop: '16px',
+            background: 'var(--bg-primary)',
+            borderRadius: '8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                Rows per page:
+              </span>
+              <select
+                value={entityType === 'slots' ? slotsPerPage : entityType === 'gamemixes' ? gameMixPerPage : cabinetsPerPage}
+                onChange={(e) => {
+                  const value = e.target.value === 'all' ? 'all' : (() => {
+                    const intValue = parseInt(e.target.value);
+                    return isNaN(intValue) ? 15 : intValue;
+                  })();
+                  if (entityType === 'slots') {
+                    handleSlotsPerPageChange(value);
+                  } else if (entityType === 'gamemixes') {
+                    handleGameMixPerPageChange(value);
+                  } else if (entityType === 'cabinets') {
+                    handleCabinetsPerPageChange(value);
+                  }
+                }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  if (entityType === 'slots') {
+                    handleSlotsPageChange(currentSlotsPage - 1);
+                  } else if (entityType === 'gamemixes') {
+                    handleGameMixPageChange(currentGameMixPage - 1);
+                  } else if (entityType === 'cabinets') {
+                    handleCabinetsPageChange(currentCabinetsPage - 1);
+                  }
+                }}
+                disabled={
+                  entityType === 'slots' ? currentSlotsPage === 1 :
+                  entityType === 'gamemixes' ? currentGameMixPage === 1 :
+                  currentCabinetsPage === 1
+                }
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  background: (
+                    entityType === 'slots' ? currentSlotsPage === 1 :
+                    entityType === 'gamemixes' ? currentGameMixPage === 1 :
+                    currentCabinetsPage === 1
+                  ) ? 'var(--bg-secondary)' : 'var(--bg-primary)',
+                  color: (
+                    entityType === 'slots' ? currentSlotsPage === 1 :
+                    entityType === 'gamemixes' ? currentGameMixPage === 1 :
+                    currentCabinetsPage === 1
+                  ) ? 'var(--text-secondary)' : 'var(--text-primary)',
+                  cursor: (
+                    entityType === 'slots' ? currentSlotsPage === 1 :
+                    entityType === 'gamemixes' ? currentGameMixPage === 1 :
+                    currentCabinetsPage === 1
+                  ) ? 'not-allowed' : 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Previous
+              </button>
+              
+              <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                Page {
+                  entityType === 'slots' ? currentSlotsPage :
+                  entityType === 'gamemixes' ? currentGameMixPage :
+                  currentCabinetsPage
+                } of {
+                  entityType === 'slots' ? getTotalSlotsPages(originalData || data) :
+                  entityType === 'gamemixes' ? getTotalGameMixPages(originalData || data) :
+                  getTotalCabinetsPages(originalData || data)
+                }
+              </span>
+              
+              <button
+                onClick={() => {
+                  if (entityType === 'slots') {
+                    handleSlotsPageChange(currentSlotsPage + 1);
+                  } else if (entityType === 'gamemixes') {
+                    handleGameMixPageChange(currentGameMixPage + 1);
+                  } else if (entityType === 'cabinets') {
+                    handleCabinetsPageChange(currentCabinetsPage + 1);
+                  }
+                }}
+                disabled={
+                  entityType === 'slots' ? currentSlotsPage === getTotalSlotsPages(originalData || data) :
+                  entityType === 'gamemixes' ? currentGameMixPage === getTotalGameMixPages(originalData || data) :
+                  currentCabinetsPage === getTotalCabinetsPages(originalData || data)
+                }
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  background: (
+                    entityType === 'slots' ? currentSlotsPage === getTotalSlotsPages(originalData || data) :
+                    entityType === 'gamemixes' ? currentGameMixPage === getTotalGameMixPages(originalData || data) :
+                    currentCabinetsPage === getTotalCabinetsPages(originalData || data)
+                  ) ? 'var(--bg-secondary)' : 'var(--bg-primary)',
+                  color: (
+                    entityType === 'slots' ? currentSlotsPage === getTotalSlotsPages(originalData || data) :
+                    entityType === 'gamemixes' ? currentGameMixPage === getTotalGameMixPages(originalData || data) :
+                    currentCabinetsPage === getTotalCabinetsPages(originalData || data)
+                  ) ? 'var(--text-secondary)' : 'var(--text-primary)',
+                  cursor: (
+                    entityType === 'slots' ? currentSlotsPage === getTotalSlotsPages(originalData || data) :
+                    entityType === 'gamemixes' ? currentGameMixPage === getTotalGameMixPages(originalData || data) :
+                    currentCabinetsPage === getTotalCabinetsPages(originalData || data)
+                  ) ? 'not-allowed' : 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -10936,7 +11256,14 @@ const Dashboard = () => {
       )}
     </div>
   );
-};
+  // Invoice Popup Component
+  const InvoicePopup = ({ invoice, onClose }) => {
+    if (!invoice) return null;
+
+    // Find location, buyer and seller based on invoice data
+    const location = locations.find(location => location.id === invoice.location_id);
+    const buyer = companies.find(company => company.id === invoice.buyer_id);
+    const seller = providers.find(provider => provider.id === invoice.seller_id);
 
     // Format amount in Romanian format (15.00,68)
     const formatAmount = (amount) => {
@@ -12750,7 +13077,13 @@ const Dashboard = () => {
                     <div>
                       <strong style={{ color: 'var(--text-primary)', fontSize: '14px' }}>🎮 Total Gaming Places:</strong>
                       <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-                        {associatedSlots.reduce((total, slot) => total + (parseInt(slot.gaming_places) || 0), 0)}
+                        {associatedSlots && Array.isArray(associatedSlots) ? associatedSlots.reduce((total, slot) => {
+                          const places = (() => {
+                            const intValue = parseInt(slot.gaming_places);
+                            return isNaN(intValue) ? 0 : intValue;
+                          })();
+                          return total + places;
+                        }, 0) : 0}
                       </p>
                     </div>
                     <div>
@@ -14803,7 +15136,13 @@ const Dashboard = () => {
                     <div>
                       <strong style={{ color: 'var(--text-primary)', fontSize: '14px' }}>🎮 Total Gaming Places:</strong>
                       <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-                        {locationSlots.reduce((total, slot) => total + (parseInt(slot.gaming_places) || 0), 0)}
+                        {locationSlots.reduce((total, slot) => {
+                          const places = (() => {
+                            const intValue = parseInt(slot.gaming_places);
+                            return isNaN(intValue) ? 0 : intValue;
+                          })();
+                          return total + places;
+                        }, 0)}
                       </p>
                     </div>
                   </div>
@@ -16417,9 +16756,18 @@ const Dashboard = () => {
       if (!value || typeof value !== 'string') return null;
       const match = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
       if (!match) return null;
-      const day = parseInt(match[1], 10);
-      const monthIndex = parseInt(match[2], 10) - 1; // 0-based
-      const year = parseInt(match[3], 10);
+      const day = (() => {
+        const intValue = parseInt(match[1], 10);
+        return isNaN(intValue) ? 1 : intValue;
+      })();
+      const monthIndex = (() => {
+        const intValue = parseInt(match[2], 10) - 1; // 0-based
+        return isNaN(intValue) ? 0 : intValue;
+      })();
+      const year = (() => {
+        const intValue = parseInt(match[3], 10);
+        return isNaN(intValue) ? new Date().getFullYear() : intValue;
+      })();
       const date = new Date(year, monthIndex, day);
       if (Number.isNaN(date.getTime())) return null;
       if (endOfDay) {
@@ -17211,71 +17559,74 @@ const Dashboard = () => {
           );
         }
 
-    // Define compact slot columns for compact view - SEPARATE columns, SINGLE row
-    const slotColumnsCompact = [
+    // Define slotColumns at the beginning to be accessible in both 'slots' and 'warehouse' cases
+    // Compact columns pentru modul compact
+    const compactSlotColumns = [
       {
-        key: 'serial_number',
-        label: 'Serial Number',
-        render: (item) => {
-          return (
-            <div 
-              className="clickable-filter"
-              onClick={() => {
-                const slotsWithSameSerial = slotMachines.filter(slot => slot.serial_number === item.serial_number);
-                setSelectedSlotsForDetails(slotsWithSameSerial);
-                setShowSlotsDetailsPage(true);
-                setSelectedSlotsFilterType('Serial Number');
-                setSelectedSlotsFilterValue(item.serial_number || 'N/A');
-              }}
-              style={{ cursor: 'pointer', fontSize: '0.9em' }}
-            >
-              <strong>{item.serial_number || 'N/A'}</strong>
-            </div>
-          );
-        }
-      },
-      {
-        key: 'location_id',
-        label: 'Location',
+        key: 'location',
+        label: 'LOCATION',
         render: (item) => {
           const location = locations.find(l => l.id === item.location_id);
           return (
             <div 
               className="clickable-filter"
               onClick={() => handleShowLocationDetails(location)}
-              style={{ cursor: 'pointer', fontSize: '0.9em' }}
+              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              title={`Click to view location details: ${location?.name || 'N/A'}`}
             >
               {location ? location.name : 'N/A'}
             </div>
           );
         }
       },
-      { 
-        key: 'provider_id', 
-        label: 'Provider', 
+      {
+        key: 'serial',
+        label: 'SERIAL',
+        render: (item) => (
+          <div 
+            className="clickable-filter"
+            onClick={() => {
+              const slotsWithSameSerial = slotMachines.filter(slot => slot.serial_number === item.serial_number);
+              setSelectedSlotsForDetails(slotsWithSameSerial);
+              setShowSlotsDetailsPage(true);
+              setSelectedSlotsFilterType('Serial Number');
+              setSelectedSlotsFilterValue(item.serial_number || 'N/A');
+            }}
+            style={{ cursor: 'pointer', fontWeight: 'bold' }}
+            title={`Click to view all slots with serial: ${item.serial_number || 'N/A'}`}
+          >
+            {item.serial_number || 'N/A'}
+          </div>
+        )
+      },
+      {
+        key: 'provider',
+        label: 'PROVIDER',
         render: (item) => {
           const provider = providers.find(p => p.id === item.provider_id);
           return (
             <div 
               className="clickable-filter"
               onClick={() => handleShowProviderDetails(provider)}
-              style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9em' }}
+              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              title={`Click to view provider details: ${provider?.name || 'N/A'}`}
             >
               {provider ? provider.name : 'N/A'}
             </div>
           );
         }
       },
-      { 
-        key: 'cabinet_id', 
-        label: 'Cabinet', 
+      {
+        key: 'cabinet',
+        label: 'CABINET',
         render: (item) => {
           const cabinet = cabinets.find(c => c.id === item.cabinet_id);
           return (
             <div 
               className="clickable-filter"
               onClick={() => handleShowCabinetDetails(cabinet)}
-              style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9em' }}
+              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              title={`Click to view cabinet details: ${cabinet?.name || 'N/A'}`}
             >
               {cabinet ? cabinet.name : 'N/A'}
             </div>
@@ -17283,75 +17634,81 @@ const Dashboard = () => {
         }
       },
       {
-        key: 'game_mix_id',
-        label: 'Game Mix',
+        key: 'game_mix',
+        label: 'GAME MIX',
         render: (item) => {
           const gameMix = gameMixes.find(gm => gm.id === item.game_mix_id);
           return (
             <div 
               className="clickable-filter"
               onClick={() => handleShowGameMixDetails(gameMix)}
-              style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9em' }}
+              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              title={`Click to view game mix details: ${gameMix?.name || 'N/A'}`}
             >
               {gameMix ? gameMix.name : 'N/A'}
             </div>
           );
         }
       },
-      { 
-        key: 'model', 
-        label: 'Model', 
-        render: (item) => {
-          return (
-            <div style={{ fontSize: '0.9em' }}>
-              {item.model || 'N/A'}
-            </div>
-          );
-        }
-      },
       {
         key: 'comision_date',
-        label: 'Commission Date',
+        label: 'COMISION DATE',
         render: (item) => {
+          // Caută toate comision dates care conțin serialul slotului
           const associatedComisionDates = comisionDates.filter(cd => {
             if (!cd.serial_numbers) return false;
+            // Verifică dacă serial_number-ul slotului este conținut în serial_numbers-ul comision date
             const comisionSerialNumbers = cd.serial_numbers.split(/\s+/).filter(s => s.trim());
             return comisionSerialNumbers.includes(item.serial_number);
           });
           
           if (associatedComisionDates.length === 0) {
-            return <span style={{ color: '#aaa', fontStyle: 'italic' }}>No Date</span>;
+            return <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '12px' }}>No Comision Date</span>;
           }
           
+          // Dacă este o singură comision date, afișează data
           if (associatedComisionDates.length === 1) {
+            const comisionDate = associatedComisionDates[0];
             return (
-              <span style={{ 
-                color: '#059669', 
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                fontWeight: '500'
-              }} onClick={() => {
-                setSelectedCommissionDate(associatedComisionDates[0]);
-                setShowCommissionDateDetailsPage(true);
-              }}>
-                {formatDateDDMMYYYY(associatedComisionDates[0].commission_date)}
-              </span>
+              <div 
+                className="clickable-filter"
+                onClick={() => {
+                  setSelectedCommissionDate(comisionDate);
+                  setShowCommissionDateDetailsPage(true);
+                }}
+                style={{ 
+                  cursor: 'pointer', 
+                  fontWeight: 'bold',
+                  color: '#059669',
+                  textDecoration: 'underline'
+                }}
+                title={`Click to view comision date details: ${formatDateDDMMYYYY(comisionDate.commission_date)}`}
+              >
+                {formatDateDDMMYYYY(comisionDate.commission_date)}
+              </div>
             );
           }
           
+          // Dacă sunt multiple comision dates, afișează "Multiple" cu bulină
           return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ 
-                color: '#059669', 
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                fontWeight: '500'
-              }} onClick={() => {
+            <div 
+              className="clickable-filter"
+              onClick={() => {
                 setSelectedCommissionDate(associatedComisionDates[0]);
                 setShowCommissionDateDetailsPage(true);
-              }}>
-                Multiple
-              </span>
+              }}
+              style={{ 
+                cursor: 'pointer', 
+                fontWeight: 'bold',
+                color: '#059669',
+                textDecoration: 'underline',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title={`Click to view comision date details: ${associatedComisionDates.length} dates`}
+            >
+              <span>Multiple</span>
               <div style={{
                 backgroundColor: '#059669',
                 color: 'white',
@@ -17372,171 +17729,58 @@ const Dashboard = () => {
         }
       },
       {
-        key: 'cvt_information',
-        label: 'CVT Date',
-        render: (item) => {
-          const metrologyItem = metrology.find(m => {
-            if (!m.serial_number) return false;
-            const serialNumbersNewline = m.serial_number.split('\n').filter(s => s.trim());
-            const serialNumbersSpace = m.serial_number.split(' ').filter(s => s.trim());
-            const serialNumbers = serialNumbersNewline.length > serialNumbersSpace.length ? 
-              serialNumbersNewline : serialNumbersSpace;
-            return serialNumbers.includes(item.serial_number);
-          });
-          
-          const cvtDate = metrologyItem?.cvt_expiry_date;
-          
-          if (!cvtDate) {
-            return <span style={{ color: '#aaa', fontStyle: 'italic' }}>No CVT</span>;
-          }
-          
-          let daysLeft = null;
-          if (cvtDate) {
-            const cvtExpiryDate = new Date(cvtDate);
-            const now = new Date();
-            const diff = Math.floor((cvtExpiryDate - now) / (1000 * 60 * 60 * 24));
-            daysLeft = diff > 0 ? diff : 0;
-          }
-          
-          let daysColor = '#10b981';
-          if (daysLeft !== null) {
-            if (daysLeft <= 30) {
-              daysColor = '#ef4444';
-            } else if (daysLeft <= 90) {
-              daysColor = '#f59e0b';
-            }
-          }
-          
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span 
-                className="clickable-filter"
-                onClick={() => handleShowMetrologyDetails([metrologyItem])}
-                style={{ 
-                  fontSize: '0.9em', 
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}
-              >
-                {formatDateDDMMYYYY(cvtDate)}
-              </span>
-              {daysLeft !== null && (
-                <span style={{
-                  color: daysColor,
-                  fontWeight: 'bold',
-                  fontSize: '0.8em'
-                }}>
-                  {daysLeft}d left
-                </span>
-              )}
-            </div>
-          );
-        }
-      },
-      { 
-        key: 'actions', 
-        label: 'Actions', 
+        key: 'actions',
+        label: 'ACTIONS',
         render: (item) => (
-          <div className="action-buttons">
-            {/* Kebab menu for compact view */}
-            <div className="kebab-menu" style={{ position: 'relative' }}>
-              <button 
-                className="kebab-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Toggle kebab menu for this item
-                  const kebabId = `kebab-${item.id}`;
-                  const existingMenu = document.getElementById(kebabId);
-                  if (existingMenu) {
-                    existingMenu.remove();
-                  } else {
-                    // Close other kebab menus
-                    document.querySelectorAll('.kebab-dropdown').forEach(menu => menu.remove());
-                    
-                    // Create new kebab menu
-                    const menu = document.createElement('div');
-                    menu.id = kebabId;
-                    menu.className = 'kebab-dropdown';
-                    menu.style.cssText = `
-                      position: absolute;
-                      right: 0;
-                      top: 100%;
-                      background: white;
-                      border: 1px solid #ddd;
-                      border-radius: 4px;
-                      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                      z-index: 1000;
-                      min-width: 120px;
-                    `;
-                    
-                    menu.innerHTML = `
-                      <div style="padding: 8px 0;">
-                        <button onclick="window.handleEditEntity(${JSON.stringify(item).replace(/"/g, '&quot;')}, 'slots')" style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                          ✏️ Edit
-                        </button>
-                        <button onclick="window.handleDeleteEntity('${item.id}', 'slots')" style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #dc3545;">
-                          🗑️ Delete
-                        </button>
-                        <button onclick="window.handleShowAttachments('${item.id}', 'slots')" style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                          📎 Attachments
-                        </button>
-                        <button onclick="window.handleShowHistory('${item.id}', 'slots')" style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                          ⏱️ History
-                        </button>
-                        <hr style="margin: 4px 0; border: none; border-top: 1px solid #eee;">
-                        <div style="padding: 8px 12px; display: flex; align-items: center; gap: 8px; justify-content: space-between;">
-                          <span>Status:</span>
-                          <label style="display: flex; align-items: center; gap: 4px;">
-                            <input type="checkbox" ${item.status === 'active' ? 'checked' : ''} onchange="window.handleStatusToggle('${item.id}', this.checked, 'slots')">
-                            <span style="font-size: 12px;">${item.status === 'active' ? 'Active' : 'Inactive'}</span>
-                          </label>
-                        </div>
-                      </div>
-                    `;
-                    
-                    // Position relative to button
-                    const button = e.target;
-                    const rect = button.getBoundingClientRect();
-                    menu.style.position = 'fixed';
-                    menu.style.left = (rect.right - 120) + 'px';
-                    menu.style.top = (rect.bottom + 5) + 'px';
-                    
-                    document.body.appendChild(menu);
-                    
-                    // Close on click outside
-                    setTimeout(() => {
-                      document.addEventListener('click', function closeMenu() {
-                        menu.remove();
-                        document.removeEventListener('click', closeMenu);
-                      });
-                    }, 100);
-                  }
-                }}
-                title="More actions"
-                style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  border: 'none',
-                  background: 'var(--bg-secondary)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                ⋮
-              </button>
-            </div>
+          <div className="kebab-menu" style={{ position: 'relative' }}>
+            <button
+              className="kebab-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = e.target.getBoundingClientRect();
+                setKebabMenuPosition({ x: rect.left, y: rect.bottom });
+                setSelectedKebabItem(item);
+                setShowKebabMenu(!showKebabMenu);
+              }}
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                cursor: 'pointer',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                padding: '6px 10px',
+                borderRadius: '50%',
+                transition: 'all 0.2s ease',
+                color: 'var(--text-primary)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'var(--accent-color)';
+                e.target.style.color = 'white';
+                e.target.style.borderColor = 'var(--accent-color)';
+                e.target.style.transform = 'scale(1.05)';
+                e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'var(--bg-secondary)';
+                e.target.style.color = 'var(--text-primary)';
+                e.target.style.borderColor = 'var(--border-color)';
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }}
+            >
+              ⋮
+            </button>
           </div>
         )
       }
     ];
 
-    // Define slotColumns at the beginning to be accessible in both 'slots' and 'warehouse' cases
     const slotColumns = [
             {
               key: 'serial_number',
@@ -17800,7 +18044,6 @@ const Dashboard = () => {
                 <div className="property-cell">
               <div className="property-primary"><strong>No Owner Info</strong></div>
               <div className="property-secondary">
-                <small>Serial: {item.serial_number || 'N/A'}</small>
                 {item.production_year && (
                   <small style={{ display: 'block', marginTop: '2px', color: 'var(--accent-color)', fontWeight: 'bold' }}>
                     {item.production_year}
@@ -18116,9 +18359,11 @@ const Dashboard = () => {
         label: 'Jackpots',
         render: (item) => {
           // Find associated jackpots for this slot
-          const associatedJackpots = jackpots.filter(j => 
-            j.serial_number === item.serial_number
-          );
+          const associatedJackpots = jackpots.filter(j => {
+            if (!j.serial_number) return false;
+            const jackpotSerialNumbers = j.serial_number.split(/\s+/).filter(s => s.trim());
+            return jackpotSerialNumbers.includes(item.serial_number);
+          });
           
           if (associatedJackpots.length === 0) {
             return <span style={{ color: '#aaa', fontStyle: 'italic' }}>No Jackpots</span>;
@@ -18400,7 +18645,8 @@ const Dashboard = () => {
           onDelete: (id) => handleDeleteEntity(id, 'providers')
         });
       case 'cabinets':
-        return renderTable('Cabinets', cabinets, [
+        const paginatedCabinets = getPaginatedCabinets(cabinets);
+        return renderTable('Cabinets', paginatedCabinets, [
                       { key: 'logo', label: 'Logo', render: (item) => <AvatarDisplay entityType="cabinets" entityId={item.id} size={50} entityName={item.name} /> },
           { key: 'name', label: 'Name' },
           { key: 'model', label: 'Model' },
@@ -18416,16 +18662,33 @@ const Dashboard = () => {
           onBulkDelete: () => handleBulkDelete('cabinets'),
           onExport: () => handleExport('cabinets'),
           onImport: () => handleImport('cabinets')
-        }, 'cabinets');
+        }, 'cabinets', cabinets);
       case 'slots': {
         // Show only active slots (including those without status set)
         const activeSlots = slotMachines.filter(s => s.status !== 'inactive');
         const activeCount = activeSlots.length;
+        const columnsToUse = isCompactMode ? compactSlotColumns : slotColumns;
         
-        // Choose columns based on view mode
-        const columnsToUse = slotViewMode === 'compact' ? slotColumnsCompact : slotColumns;
+        // Check if any filters are applied
+        const hasFilters = selectedLocationFilter || selectedProviderFilter || selectedCabinetFilter || 
+                          selectedGameMixFilter || selectedInvoiceFilter || selectedContractFilter ||
+                          selectedSerialFilter || selectedCompanyFilter || selectedRTPFilter ||
+                          selectedPlacesFilter || selectedCvtDateFilter || selectedProviderAvatarFilter ||
+                          selectedLocations.length > 0 || selectedCabinets.length > 0 || 
+                          selectedGameMixes.length > 0 || selectedModels.length > 0 || 
+                          selectedJackpotTypes.length > 0 || selectedCommissionDates.length > 0;
         
-        return renderTable(`Slot Machines`, activeSlots, columnsToUse, {
+        // Apply or remove filter based on current state
+        if (hasFilters && !isFilterApplied) {
+          applySlotsFilter();
+        } else if (!hasFilters && isFilterApplied) {
+          removeSlotsFilter();
+        }
+        
+        const paginatedSlots = getPaginatedSlots(activeSlots);
+        const totalPages = getTotalSlotsPages(activeSlots);
+        
+        return renderTable(`Slot Machines`, paginatedSlots, columnsToUse, {
           onAdd: () => handleAddEntity('slots'),
           onEdit: (item) => handleEditEntity(item, 'slots'),
           onDelete: (id) => handleDeleteEntity(id, 'slots'),
@@ -18434,16 +18697,13 @@ const Dashboard = () => {
           onBulkDuplicate: () => handleBulkDuplicate('slots'),
           onExport: () => handleExport('slots'),
           onImport: () => handleImport('slots')
-        }, 'slots', slotViewMode, toggleSlotViewMode);
+        }, 'slots', activeSlots);
       }
       case 'warehouse': {
         // Show only inactive slots
         const warehouseSlots = slotMachines.filter(s => s.status === 'inactive');
         const warehouseCount = warehouseSlots.length;
-        
-        // Choose columns based on view mode
-        const columnsToUse = slotViewMode === 'compact' ? slotColumnsCompact : slotColumns;
-        
+        const columnsToUse = isCompactMode ? compactSlotColumns : slotColumns;
         return renderTable(`Warehouse`, warehouseSlots, columnsToUse, {
           onAdd: () => handleAddEntity('slots'),
           onEdit: (item) => handleEditEntity(item, 'slots'),
@@ -18453,7 +18713,7 @@ const Dashboard = () => {
           onBulkDuplicate: () => handleBulkDuplicate('slots'),
           onExport: () => handleExport('slots'),
           onImport: () => handleImport('slots')
-        }, 'slots', slotViewMode, toggleSlotViewMode);
+        }, 'slots');
       }
       case 'metrology': {
         // REDIRECT TO METROLOGY CVT - THE ONLY CORRECT METROLOGY TABLE
@@ -18875,7 +19135,8 @@ const Dashboard = () => {
           }, 'jackpots');
         }
       case 'gamemixes':
-        return renderTable('Game Mixes', gameMixes, [
+        const paginatedGameMixes = getPaginatedGameMix(gameMixes);
+        return renderTable('Game Mixes', paginatedGameMixes, [
           {
             key: 'avatar',
             label: 'Avatar',
@@ -18962,7 +19223,7 @@ const Dashboard = () => {
           onAdd: () => handleAddEntity('gamemixes'),
           onEdit: (item) => handleEditEntity(item, 'gamemixes'),
           onDelete: (id) => handleDeleteEntity(id, 'gamemixes')
-        });
+        }, 'gamemixes', gameMixes);
       case 'games':
         return <GamesPage 
           gameMixes={gameMixes}
@@ -19378,9 +19639,10 @@ const Dashboard = () => {
                 const associatedSlots = slotMachines.filter(slot => 
                   serials.includes(slot.serial_number)
                 );
-                const totalGamingPlaces = associatedSlots.reduce((total, slot) => 
-                  total + (parseInt(slot.gaming_places) || 0), 0
-                );
+                const totalGamingPlaces = associatedSlots && Array.isArray(associatedSlots) ? associatedSlots.reduce((total, slot) => {
+                  const places = parseInt(slot.gaming_places);
+                  return total + (isNaN(places) ? 0 : places);
+                }, 0) : 0;
                 return (
                   <div style={{ 
                     backgroundColor: '#28a745', 
@@ -19404,9 +19666,10 @@ const Dashboard = () => {
                   const associatedSlots = slotMachines.filter(slot => 
                     serials.includes(slot.serial_number)
                   );
-                  const totalGamingPlaces = associatedSlots.reduce((total, slot) => 
-                    total + (parseInt(slot.gaming_places) || 0), 0
-                  );
+                  const totalGamingPlaces = associatedSlots && Array.isArray(associatedSlots) ? associatedSlots.reduce((total, slot) => {
+                    const places = parseInt(slot.gaming_places);
+                    return total + (isNaN(places) ? 0 : places);
+                  }, 0) : 0;
                   return (
                     <div style={{ 
                       backgroundColor: '#28a745', 
@@ -19645,7 +19908,7 @@ const Dashboard = () => {
           { key: 'type', label: 'Type', sortable: true },
           { key: 'description', label: 'Description', sortable: true },
           { key: 'locations', label: 'Locations', sortable: false, render: (value) => {
-            if (!value || value.length === 0) return 'None';
+            if (!value || !Array.isArray(value) || value.length === 0) return 'None';
             const locationNames = value.map(locId => {
               const location = locations.find(l => l.id === locId);
               return location ? location.name : locId;
@@ -19656,7 +19919,7 @@ const Dashboard = () => {
           { key: 'end_at', label: 'End Date', sortable: true, render: (value) => formatDateDDMMYYYY(value) },
           { key: 'status', label: 'Status', sortable: true },
           { key: 'payouts', label: 'Payouts', sortable: false, render: (value) => {
-            if (!value || value.length === 0) return '0';
+            if (!value || !Array.isArray(value) || value.length === 0) return '0';
             const totalAmount = value.reduce((sum, payout) => sum + (payout.amount || 0), 0);
             return `${value.length} (${totalAmount.toFixed(2)} RON)`;
           }},
@@ -19823,8 +20086,10 @@ const Dashboard = () => {
                   setSelectedGameMix(null);
                 }
                 
-                // Update breadcrumb when navigating to main sections
-                clearBreadcrumb();
+                // Clear breadcrumb when navigating to main sections (except games)
+                if (item.id !== 'games') {
+                  clearBreadcrumb();
+                }
                 if (item.id !== 'dashboard') {
                   addBreadcrumb(item.label, item.icon, () => setActiveView(item.id));
                 } else {
@@ -19877,12 +20142,14 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="main-content">
         <div className="content-body">
-          {/* Breadcrumb Navigation */}
-          <Breadcrumb 
-            breadcrumbPath={breadcrumbPath} 
-            onNavigate={navigateToBreadcrumb} 
-            theme={theme} 
-          />
+          {/* Breadcrumb Navigation - Only show in game mixes */}
+          {activeView === 'games' && breadcrumbPath.length > 0 && (
+            <Breadcrumb 
+              breadcrumbPath={breadcrumbPath} 
+              onNavigate={navigateToBreadcrumb} 
+              theme={theme} 
+            />
+          )}
           
           {renderContent()}
         </div>
@@ -20009,7 +20276,10 @@ const Dashboard = () => {
                       onClick={() => {
                         const d = document.getElementById('mp_date').value;
                         const loc = document.getElementById('mp_loc').value;
-                        const amt = parseFloat(document.getElementById('mp_amt').value || '0');
+                        const amt = (() => {
+                          const numValue = parseFloat(document.getElementById('mp_amt').value || '0');
+                          return isNaN(numValue) ? 0 : numValue;
+                        })();
                         if (!d || !loc || !amt) {
                           showCustomNotification('Please fill all payout fields', 'error');
                           return;
@@ -20167,17 +20437,16 @@ const Dashboard = () => {
         />
       )}
 
-        {showAddCvtDatePopup && (
-          <AddCvtDatePopup 
-            onClose={handleCloseAddCvtDatePopup} 
-          />
-        )}
-
-        {/* Invoice Popup Modal */}
-        {showInvoicePopup && !showInvoiceDetailsPage && (
+      {/* Invoice Popup Modal */}
+              {showInvoicePopup && !showInvoiceDetailsPage && (
           <InvoicePopup 
             invoice={selectedInvoice} 
             onClose={handleCloseInvoicePopup} 
+          />
+        )}
+        {showAddCvtDatePopup && (
+          <AddCvtDatePopup 
+            onClose={handleCloseAddCvtDatePopup} 
           />
         )}
         
@@ -21625,6 +21894,168 @@ const Dashboard = () => {
             }}
           />
         )}
+
+        {/* Kebab Menu for Compact Mode */}
+        {showKebabMenu && selectedKebabItem && (
+          <div 
+            className="kebab-menu-dropdown"
+            style={{
+              position: 'fixed',
+              left: kebabMenuPosition.x,
+              top: kebabMenuPosition.y,
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              zIndex: 1000,
+              minWidth: '150px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="kebab-menu-item"
+              onClick={() => {
+                handleEditEntity(selectedKebabItem, 'slots');
+                setShowKebabMenu(false);
+                setSelectedKebabItem(null);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: 'var(--text-primary)',
+                fontWeight: '500'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
+              onMouseLeave={(e) => e.target.style.background = 'none'}
+            >
+              <span style={{ fontSize: '16px' }}>✏️</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>Edit</span>
+            </button>
+            <button
+              className="kebab-menu-item"
+              onClick={() => {
+                handleDeleteEntity(selectedKebabItem.id, 'slots');
+                setShowKebabMenu(false);
+                setSelectedKebabItem(null);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: 'var(--text-primary)',
+                fontWeight: '500'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
+              onMouseLeave={(e) => e.target.style.background = 'none'}
+            >
+              <span style={{ fontSize: '16px' }}>🗑️</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>Delete</span>
+            </button>
+            <button
+              className="kebab-menu-item"
+              onClick={() => {
+                handleShowSlotAttachments(selectedKebabItem.id);
+                setShowKebabMenu(false);
+                setSelectedKebabItem(null);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: 'var(--text-primary)',
+                fontWeight: '500'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
+              onMouseLeave={(e) => e.target.style.background = 'none'}
+            >
+              <span style={{ fontSize: '16px' }}>📎</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>Attachments</span>
+            </button>
+            <button
+              className="kebab-menu-item"
+              onClick={() => {
+                handleOpenChangeHistory('slots', selectedKebabItem.id);
+                setShowKebabMenu(false);
+                setSelectedKebabItem(null);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: 'var(--text-primary)',
+                fontWeight: '500'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
+              onMouseLeave={(e) => e.target.style.background = 'none'}
+            >
+              <span style={{ fontSize: '16px' }}>📋</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>History</span>
+            </button>
+            <button
+              className="kebab-menu-item"
+              onClick={() => {
+                // Schedule change functionality
+                setSelectedSlotForSchedule(selectedKebabItem);
+                setShowScheduleForm(true);
+                setShowKebabMenu(false);
+                setSelectedKebabItem(null);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: 'var(--text-primary)',
+                fontWeight: '500'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
+              onMouseLeave={(e) => e.target.style.background = 'none'}
+            >
+              <span style={{ fontSize: '16px' }}>⏱️</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>Schedule</span>
+            </button>
+          </div>
+        )}
     </div>
   );
 };
@@ -21657,6 +22088,108 @@ const AppContent = () => {
 };
 
 export default App;
+
+// Componenta pentru avatar-ul ultimului user logat în login page
+function LastUserAvatar() {
+  const [avatar, setAvatar] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLastUserAvatar = async () => {
+      try {
+        // Încearcă să obții ID-ul ultimului user logat din token
+        const token = localStorage.getItem('token');
+        let userId = 'admin-user-id'; // fallback
+        
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            userId = payload.sub;
+          } catch (error) {
+            console.log('Nu s-a putut decodifica token-ul, folosind admin-user-id');
+          }
+        }
+
+        // Folosește token-ul existent sau admin token pentru a obține avatar-ul
+        const authToken = token || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbi11c2VyLWlkIiwiZXhwIjoxNzU3NTg4NDk3fQ.QUN_y3p3hf_CyHMo8fYTjni3KTUWMqK9SaphSGVGCUQ';
+        
+        const response = await fetch(`${API}/attachments/users/${userId}`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+          const attachments = await response.json();
+          const avatarAttachment = attachments.find(att => 
+            att.mime_type.startsWith('image/') && 
+            (att.filename.includes('avatar') || att.filename.includes('custom_avatar'))
+          );
+          setAvatar(avatarAttachment || null);
+        }
+      } catch (error) {
+        console.error('Error fetching avatar:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLastUserAvatar();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{
+        width: '160px',
+        height: '160px',
+        borderRadius: '50%',
+        backgroundColor: '#374151',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto',
+        border: '3px solid #fff',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+      }}>
+        <div style={{ color: '#fff', fontSize: '24px' }}>...</div>
+      </div>
+    );
+  }
+
+  if (avatar) {
+    return (
+      <img
+        src={`data:${avatar.mime_type};base64,${avatar.file_data}`}
+        alt="User Avatar"
+        style={{
+          width: '160px',
+          height: '160px',
+          borderRadius: '50%',
+          objectFit: 'cover',
+          border: '3px solid #fff',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+          margin: '0 auto',
+          display: 'block'
+        }}
+      />
+    );
+  }
+
+  return (
+    <div style={{
+      width: '160px',
+      height: '160px',
+      borderRadius: '50%',
+      backgroundColor: '#3B82F6',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto',
+      border: '3px solid #fff',
+      boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+    }}>
+      <div style={{ color: '#fff', fontSize: '48px', fontWeight: 'bold' }}>A</div>
+    </div>
+  );
+}
 
 // Adaug componenta GameMixAvatar sub AvatarDisplay
 function GameMixAvatar({ entityId, name }) {

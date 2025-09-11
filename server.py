@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
     mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
     try:
         client = AsyncIOMotorClient(mongo_url)
-        db = client[os.environ.get('DB_NAME', 'casino_management')]
+        db = client[os.environ.get('DB_NAME', 'cashpot_v5')]
         print("MongoDB connected successfully")
     except Exception as e:
         print(f"MongoDB connection failed: {e}")
@@ -170,7 +170,7 @@ class Company(BaseModel):
     contact_person: str
     status: str = "active"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class CompanyCreate(BaseModel):
     name: str
@@ -186,10 +186,10 @@ class Location(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     address: str
-    city: str
-    county: str
+    city: str = "Unknown"
+    county: str = "Unknown"
     country: str = "Romania"
-    postal_code: str
+    postal_code: str = "000000"
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     company_id: str
@@ -203,7 +203,7 @@ class Location(BaseModel):
     contact_phone: Optional[str] = None
     status: str = "active"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class LocationCreate(BaseModel):
     name: str
@@ -225,15 +225,15 @@ class LocationCreate(BaseModel):
 class Provider(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    company_name: str
-    contact_person: str
-    email: str
-    phone: str
-    address: str
+    company_name: str = "Unknown Company"
+    contact_person: str = "Unknown Contact"
+    email: str = "unknown@example.com"
+    phone: str = "0000000000"
+    address: str = "Unknown Address"
     website: Optional[str] = None
     status: str = "active"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class ProviderCreate(BaseModel):
     name: str
@@ -247,13 +247,13 @@ class ProviderCreate(BaseModel):
 class GameMix(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    description: str
+    description: str = "No description"
     provider_id: str
-    game_count: int
-    games: List[str]
+    game_count: int = 0
+    games: List[str] = []
     status: str = "active"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class GameMixCreate(BaseModel):
     name: str
@@ -268,7 +268,7 @@ class Cabinet(BaseModel):
     provider_id: str
     status: str = "active"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class CabinetCreate(BaseModel):
     name: str
@@ -286,15 +286,15 @@ class SlotMachine(BaseModel):
     provider_id: str
     model: str
     serial_number: str  # Unique identifier for invoicing
-    denomination: float
-    max_bet: float
-    rtp: float  # Return to Player percentage
-    gaming_places: int
+    denomination: float = 0.01  # Default value for imported slots
+    max_bet: float = 100.0  # Default value for imported slots
+    rtp: float = 95.0  # Default value for imported slots
+    gaming_places: int = 1  # Default value for imported slots
     commission_date: Optional[datetime] = None
     invoice_number: Optional[str] = None  # From invoices table
     status: str = "active"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"  # Default value for imported slots
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
     location_id: Optional[str] = None
@@ -391,7 +391,7 @@ class Invoice(BaseModel):
     status: str = "pending"  # pending, paid, overdue
     description: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class InvoiceCreate(BaseModel):
     invoice_number: str
@@ -419,7 +419,7 @@ class ONJNReport(BaseModel):
     status: str = "draft"  # draft, submitted, approved, rejected
     equipment_data: dict
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class ONJNReportCreate(BaseModel):
     report_number: str
@@ -441,7 +441,7 @@ class LegalDocument(BaseModel):
     status: str = "active"  # active, expired, revoked
     description: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class LegalDocumentCreate(BaseModel):
     title: str
@@ -463,7 +463,7 @@ class Metrology(BaseModel):
     status: str = "active"  # active, expired, pending
     description: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
 
@@ -495,7 +495,7 @@ class Jackpot(BaseModel):
     status: str = "active"  # active, inactive, won
     description: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class JackpotCreate(BaseModel):
     serial_number: str
@@ -515,7 +515,7 @@ class ComisionDate(BaseModel):
     commission_date: datetime  # Data comisiei (selectabilă din calendar)
     serial_numbers: str  # Space-separated serial numbers
     created_at: datetime = Field(default_factory=datetime.utcnow)  # Data creării (automată)
-    created_by: str
+    created_by: str = "admin-user-id"
 
 class ComisionDateCreate(BaseModel):
     event_name: str  # Numele event-ului
@@ -772,7 +772,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
         return User(**user)
-    except jwt.PyJWTError:
+    except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
 async def geocode_address(address: str, city: str, country: str = "Romania"):
@@ -1428,7 +1428,7 @@ async def get_cabinets(current_user: User = Depends(get_current_user)):
         for cabinet in cabinets:
             # Create a simple dict
             cabinet_dict = {
-                "id": str(cabinet["_id"]),
+                "id": cabinet.get("id", str(cabinet["_id"])),
                 "name": cabinet.get("name", ""),
                 "model": cabinet.get("model", ""),
                 "provider_id": cabinet.get("provider_id", ""),
@@ -1453,7 +1453,7 @@ async def get_cabinets_simple():
         result = []
         for cabinet in cabinets:
             cabinet_dict = {
-                "id": str(cabinet["_id"]),
+                "id": cabinet.get("id", str(cabinet["_id"])),
                 "name": cabinet.get("name", ""),
                 "model": cabinet.get("model", ""),
                 "provider_id": cabinet.get("provider_id", ""),
@@ -3095,12 +3095,20 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
     active_locations = await db.locations.count_documents(active_locations_query)
     
     # Get equipment counts based on accessible locations
-    cabinets_query = {"location_id": {"$in": accessible_locations}}
-    
-    # For slot machines, we need to find cabinets in accessible locations first
-    accessible_cabinets = await db.cabinets.find(cabinets_query).to_list(1000)
-    accessible_cabinet_ids = [cab["id"] for cab in accessible_cabinets]
-    slots_query = {"cabinet_id": {"$in": accessible_cabinet_ids}} if accessible_cabinet_ids else {"cabinet_id": {"$in": []}}
+    # For admin, get all cabinets and slots; for others, filter by accessible locations
+    if current_user.role == UserRole.ADMIN:
+        cabinets_query = {}
+        slots_query = {}
+    else:
+        cabinets_query = {"location_id": {"$in": accessible_locations}}
+        # For slot machines, we need to find cabinets in accessible locations first
+        accessible_cabinets = await db.cabinets.find(cabinets_query).to_list(1000)
+        accessible_cabinet_ids = [cab["id"] for cab in accessible_cabinets]
+        # Use a simpler query approach to avoid $in issues
+        if accessible_cabinet_ids:
+            slots_query = {"cabinet_id": {"$in": accessible_cabinet_ids}}
+        else:
+            slots_query = {"cabinet_id": {"$exists": False}}  # No cabinets, so no slots
     
     # For admin, get all providers and game mixes; for others, get only those used in accessible locations
     if current_user.role == UserRole.ADMIN:
