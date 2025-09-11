@@ -1720,20 +1720,28 @@ const AuthProvider = ({ children }) => {
   }, [user]);
 
   useEffect(() => {
+    console.log('🔄 AuthProvider useEffect triggered');
     const token = localStorage.getItem('token');
+    console.log('🔄 Token from localStorage:', token ? 'exists' : 'not found');
     if (token) {
       fetch(`${API}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())
         .then(data => {
+          console.log('🔄 /auth/me response:', data);
           if (data.id) {
+            console.log('🔄 Setting user from token:', data);
             setUser(data);
           } else {
+            console.log('🔄 No user ID, removing token');
             localStorage.removeItem('token');
           }
         })
-        .catch(() => localStorage.removeItem('token'))
+        .catch((err) => {
+          console.log('🔄 Error fetching /auth/me:', err);
+          localStorage.removeItem('token');
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -1741,14 +1749,18 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (username, password) => {
+    console.log('🔐 Attempting login for:', username);
     const response = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
     const data = await response.json();
+    console.log('🔐 Login response:', response.status, data);
+    
     if (response.ok) {
       localStorage.setItem('token', data.access_token);
+      console.log('🔐 Token saved to localStorage');
       
       // Încarcă permisiunile imediat după login
       const meResponse = await fetch(`${API}/auth/me`, {
@@ -1756,11 +1768,14 @@ const AuthProvider = ({ children }) => {
       });
       if (meResponse.ok) {
         const userData = await meResponse.json();
+        console.log('🔐 User data loaded:', userData);
         setUser(userData);
       } else {
+        console.log('🔐 Using user data from login response:', data.user);
         setUser(data.user);
       }
       
+      console.log('🔐 Login successful, user set');
       return true;
     }
     throw new Error(data.detail || 'Login failed');
@@ -2213,11 +2228,14 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🚀 Login form submitted');
     setError('');
     setLoading(true);
     
     try {
-      await login(username, password);
+      console.log('🚀 Calling login function...');
+      const loginResult = await login(username, password);
+      console.log('🚀 Login result:', loginResult);
       
       // Save credentials if remember me is checked
       if (rememberMe) {
@@ -2230,8 +2248,10 @@ const Login = () => {
         localStorage.removeItem('savedCredentials');
       }
       
+      console.log('🚀 Login form completed successfully');
       // User state will trigger useEffect to load dashboard data
     } catch (err) {
+      console.error('🚀 Login error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -22070,6 +22090,8 @@ const App = () => {
 
 const AppContent = () => {
   const { user, loading } = useAuth();
+
+  console.log('🎯 AppContent render - user:', user ? 'logged in' : 'not logged in', 'loading:', loading);
 
   if (loading) {
     return (
