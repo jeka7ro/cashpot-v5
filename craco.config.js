@@ -30,5 +30,34 @@ module.exports = {
       return webpackConfig;
     },
   },
+  devServer: {
+    static: [
+      {
+        directory: path.join(__dirname, 'public'),
+        publicPath: '/',
+      },
+    ],
+    historyApiFallback: {
+      disableDotRule: true,
+      index: '/index.html',
+    },
+    setupMiddlewares: (middlewares, devServer) => {
+      // Add middleware to serve manifest.json directly
+      devServer.app.get('/manifest.json', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+      });
+      
+      devServer.app.get('/favicon.ico', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
+      });
+      
+      devServer.app.get('/robots.txt', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+      });
+      
+      return middlewares;
+    },
+  },
 };
   

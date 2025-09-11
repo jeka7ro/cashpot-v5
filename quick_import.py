@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 
 def login_railway():
-    login_data = {'username': 'admin', 'password': 'admin123'}
+    login_data = {'username': 'admin_new', 'password': 'admin123'}
     response = requests.post('https://cashpot-v5-production.up.railway.app/api/auth/login', json=login_data)
     if response.status_code == 200:
         return response.json().get('access_token')
@@ -173,16 +173,8 @@ def main():
             continue
         
         # Parse commission date from Google Sheet
+        # Set default commission date since Comisie column is not present
         commission_date = '2025-01-01T00:00:00'  # Default
-        if not pd.isna(row['Comisie']):
-            try:
-                # Convert from DD.MM.YYYY to YYYY-MM-DDTHH:MM:SS
-                date_str = str(row['Comisie'])
-                if '.' in date_str:
-                    day, month, year = date_str.split('.')
-                    commission_date = f'{year}-{month.zfill(2)}-{day.zfill(2)}T00:00:00'
-            except:
-                pass
         
         slot_data = {
             'serial_number': str(row['Nr. serie']),

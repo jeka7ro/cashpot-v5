@@ -35,7 +35,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:8002", "http://127.0.0.1:8002"],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1076,6 +1076,18 @@ async def get_game_mixes(current_user: User = Depends(get_current_user)):
     game_mixes = await db.game_mixes.find(query).to_list(1000)
     # Convert ObjectIds to strings
     game_mixes = [convert_objectid_to_str(game_mix) for game_mix in game_mixes]
+    
+    # Add missing required fields with defaults
+    for game_mix in game_mixes:
+        if 'description' not in game_mix:
+            game_mix['description'] = game_mix.get('name', 'No description')
+        if 'game_count' not in game_mix:
+            game_mix['game_count'] = len(game_mix.get('games', []))
+        if 'games' not in game_mix:
+            game_mix['games'] = []
+        if 'created_by' not in game_mix:
+            game_mix['created_by'] = 'admin-user-id'
+    
     return [GameMix(**game_mix) for game_mix in game_mixes]
 
 @api_router.get("/game-mixes/{game_mix_id}", response_model=GameMix)
@@ -1310,6 +1322,12 @@ async def get_slot_machines(current_user: User = Depends(get_current_user)):
     slot_machines = await db.slot_machines.find(query).to_list(1000)
     # Convert ObjectIds to strings
     slot_machines = [convert_objectid_to_str(slot_machine) for slot_machine in slot_machines]
+    
+    # Add missing required fields with defaults
+    for slot_machine in slot_machines:
+        if 'created_by' not in slot_machine:
+            slot_machine['created_by'] = 'admin-user-id'
+    
     return [SlotMachine(**slot_machine) for slot_machine in slot_machines]
 
 @api_router.get("/slot-machines/{slot_machine_id}", response_model=SlotMachine)
