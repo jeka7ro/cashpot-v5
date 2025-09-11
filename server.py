@@ -33,7 +33,7 @@ db = None
 async def lifespan(app: FastAPI):
     # Startup
     global client, db
-    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    mongo_url = os.environ.get('MONGO_URL', 'os.getenv("MONGO_URL", "mongodb://localhost:27017")')
     try:
         client = AsyncIOMotorClient(mongo_url)
         db = client[os.environ.get('DB_NAME', 'cashpot_v5')]
@@ -3624,4 +3624,4 @@ app.include_router(api_router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
