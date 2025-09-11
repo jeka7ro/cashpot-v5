@@ -4,7 +4,7 @@ import './app.css';
 
 
 
-const BACKEND_URL = 'http://localhost:8002';
+const BACKEND_URL = 'http://localhost:8000';
 // Cache buster: 2024-09-04
 const API = `${BACKEND_URL}/api`;
 
