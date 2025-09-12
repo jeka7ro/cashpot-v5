@@ -33,10 +33,10 @@ db = None
 async def lifespan(app: FastAPI):
     # Startup
     global client, db
-    mongo_url = os.environ.get('MONGO_URL', 'os.getenv("MONGO_URL", "mongodb://localhost:27017")')
+    mongo_url = os.getenv("MONGO_URL", "mongodb://localhost:27017")
     try:
         client = AsyncIOMotorClient(mongo_url)
-        db = client[os.environ.get('DB_NAME', 'cashpot_v5')]
+        db = client[os.getenv('DB_NAME', 'cashpot_v5')]
         print("MongoDB connected successfully")
     except Exception as e:
         print(f"MongoDB connection failed: {e}")
@@ -72,7 +72,7 @@ api_router = APIRouter(prefix="/api")
 
 # Security
 security = HTTPBearer()
-JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-here')
+JWT_SECRET = os.getenv('JWT_SECRET_KEY', 'your-secret-key-here')
 JWT_ALGORITHM = 'HS256'
 
 # Models
