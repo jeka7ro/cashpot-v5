@@ -4,8 +4,9 @@ import './app.css';
 
 
 
-const BACKEND_URL = 'http://localhost:8000';
-// Cache buster: 2024-09-04
+// Dynamic backend URL based on environment
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+// Cache buster: 2024-09-11
 const API = `${BACKEND_URL}/api`;
 
 // Debug logging
