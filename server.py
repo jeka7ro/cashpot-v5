@@ -848,11 +848,11 @@ async def login(user_data: UserLogin):
         print("❌ User not found")
         raise HTTPException(status_code=401, detail="Invalid username or password")
     
-    print(f"🔐 Hash from database: {user['password_hash']}")
+    print(f"🔐 Hash from database: {user['password']}")
     print(f"🔐 User ID: {user.get('id', 'N/A')}")
     print(f"🔐 Created at: {user.get('created_at', 'N/A')}")
     print(f"🔐 Password verification for user: {user['username']}")
-    password_valid = verify_password(user_data.password, user["password_hash"])
+    password_valid = verify_password(user_data.password, user["password"])
     print(f"✅ Password valid: {password_valid}")
     
     if not password_valid:
