@@ -864,12 +864,12 @@ async def login(user_data: UserLogin):
         raise HTTPException(status_code=401, detail="Account is inactive")
     
     print("🎉 Login successful, creating token")
-    access_token = create_access_token(data={"sub": user["id"]})
+    access_token = create_access_token(data={"sub": str(user["_id"])})
     return {
         "access_token": access_token, 
         "token_type": "bearer", 
         "user": {
-            "id": user["id"], 
+            "id": str(user["_id"]), 
             "username": user["username"], 
             "first_name": user.get("first_name", ""),
             "last_name": user.get("last_name", ""),
