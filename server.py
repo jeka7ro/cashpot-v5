@@ -768,7 +768,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             raise HTTPException(status_code=503, detail="Database not available")
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
-        # Try multiple search methods
+        # Try multiple search methods - UPDATED
         user = None
         
         # Method 1: Try ObjectId
