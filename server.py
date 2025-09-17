@@ -784,6 +784,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             if user:
                 print(f"String search found user: {user.get('username')}")
         if user is None:
+            print(f"User not found for ID: {user_id}")
             raise HTTPException(status_code=401, detail="User not found")
         return User(**user)
     except Exception as e:
