@@ -789,6 +789,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             print(f"Database name: {db.name}")
             print(f"JWT_SECRET: {JWT_SECRET[:10]}...")
             print(f"Backend is working - user search failed")
+            print(f"CRITICAL: Authentication system needs fixing")
             raise HTTPException(status_code=401, detail="User not found")
         return User(**user)
     except Exception as e:
