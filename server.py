@@ -778,11 +778,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             print(f"ObjectId search failed: {e}")
             pass
         
-        # Method 2: Try string - FIXED
+        # Method 2: Try id field - FIXED
         if user is None:
-            user = await db.users.find_one({"_id": user_id})
+            user = await db.users.find_one({"id": user_id})
             if user:
-                print(f"String search found user: {user.get('username')}")
+                print(f"ID search found user: {user.get('username')}")
         if user is None:
             print(f"User not found for ID: {user_id}")
             print(f"Available users in database: {await db.users.count_documents({})}")
