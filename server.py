@@ -768,18 +768,21 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             raise HTTPException(status_code=503, detail="Database not available")
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
-        # Try multiple search methods - UPDATED V2
+        # Try multiple search methods - UPDATED V13
         user = None
         
-        # Method 1: Try ObjectId
+        # Method 1: Try ObjectId - FIXED
         try:
             user = await db.users.find_one({"_id": ObjectId(user_id)})
-        except:
+        except Exception as e:
+            print(f"ObjectId search failed: {e}")
             pass
         
-        # Method 2: Try string
+        # Method 2: Try string - FIXED
         if user is None:
             user = await db.users.find_one({"_id": user_id})
+            if user:
+                print(f"String search found user: {user.get('username')}")
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
         return User(**user)
