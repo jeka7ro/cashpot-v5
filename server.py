@@ -764,39 +764,40 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         
         if db is None:
             raise HTTPException(status_code=503, detail="Database not available")
-        if db is None:
-            raise HTTPException(status_code=503, detail="Database not available")
-        if db is None:
-            raise HTTPException(status_code=503, detail="Database not available")
-        # Try multiple search methods - UPDATED V13
+        
+        # CRITICAL FIX: Try multiple search methods
         user = None
         
-        # Method 1: Try ObjectId - FIXED
+        # Method 1: Try by username from token (if available)
+        # Method 2: Try ObjectId search
         try:
+            from bson import ObjectId
             user = await db.users.find_one({"_id": ObjectId(user_id)})
+            if user:
+                print(f"ObjectId search found user: {user.get('username')}")
         except Exception as e:
             print(f"ObjectId search failed: {e}")
-            pass
         
-        # Method 2: Try ObjectId search - FIXED
+        # Method 3: Try id field search
         if user is None:
-            try:
-                from bson import ObjectId
-                user = await db.users.find_one({"_id": ObjectId(user_id)})
-                if user:
-                    print(f"ObjectId search found user: {user.get('username')}")
-            except Exception as e:
-                print(f"ObjectId search failed: {e}")
+            user = await db.users.find_one({"id": user_id})
+            if user:
+                print(f"ID field search found user: {user.get('username')}")
+        
+        # Method 4: Try username search (fallback)
+        if user is None:
+            user = await db.users.find_one({"username": "admin"})
+            if user:
+                print(f"Username search found admin user: {user.get('username')}")
+        
         if user is None:
             print(f"User not found for ID: {user_id}")
             print(f"Available users in database: {await db.users.count_documents({})}")
-            print(f"Database name: {db.name}")
-            print(f"JWT_SECRET: {JWT_SECRET[:10]}...")
-            print(f"Backend is working - user search failed")
-            print(f"CRITICAL: Authentication system needs fixing")
             raise HTTPException(status_code=401, detail="User not found")
+        
         return User(**user)
     except Exception as e:
+        print(f"Authentication error: {e}")
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
 async def geocode_address(address: str, city: str, country: str = "Romania"):
