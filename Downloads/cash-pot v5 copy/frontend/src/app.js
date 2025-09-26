@@ -2308,11 +2308,14 @@ const Login = () => {
 const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations, providers, cabinets, gameMixes, invoices, users, slotMachines, metrology, jackpots, showCustomNotification }) => {
   const [formData, setFormData] = useState({});
   
-  // Avatar state
+  // Avatar state (only for entities that support avatars)
+  const shouldUseAvatar = !['companies', 'locations', 'cabinets'].includes(entityType);
   const { avatar, setAvatar } = useAvatar(entityType, entity?.id);
   
   const handleAvatarChange = (newAvatar) => {
-    setAvatar(newAvatar);
+    if (shouldUseAvatar) {
+      setAvatar(newAvatar);
+    }
   };
 
 
@@ -2845,29 +2848,6 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
               />
             </div>
             <div className="form-group">
-              <label>Company Logo</label>
-              <div className="avatar-section">
-                <AvatarUpload
-                  entityType="companies"
-                  entityId={entity?.id || 'temp'}
-                  currentAvatar={avatar}
-                  onAvatarChange={handleAvatarChange}
-                  showCustomNotification={showCustomNotification}
-                />
-              </div>
-              <div className="form-group">
-                <label>Custom Avatar Editor</label>
-                <CustomAvatarEditor
-                  entityType="companies"
-                  entityId={entity?.id || 'temp'}
-                  currentAvatar={avatar}
-                  onAvatarChange={handleAvatarChange}
-                  entityName={formData.name}
-                  showCustomNotification={showCustomNotification}
-                />
-              </div>
-            </div>
-            <div className="form-group">
               <label>Company Documents</label>
               <FileUpload
                 entityType="companies"
@@ -3050,29 +3030,6 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
               </>
             )}
             <div className="form-group">
-              <label>Location Avatar</label>
-              <div className="avatar-section">
-                <AvatarUpload
-                  entityType="locations"
-                  entityId={entity?.id || 'temp'}
-                  currentAvatar={avatar}
-                  onAvatarChange={handleAvatarChange}
-                  showCustomNotification={showCustomNotification}
-                />
-              </div>
-              <div className="form-group">
-                <label>Custom Avatar Editor</label>
-                <CustomAvatarEditor
-                  entityType="locations"
-                  entityId={entity?.id || 'temp'}
-                  currentAvatar={avatar}
-                  onAvatarChange={handleAvatarChange}
-                  entityName={formData.name}
-                  showCustomNotification={showCustomNotification}
-                />
-              </div>
-            </div>
-            <div className="form-group">
               <label>Location Documents</label>
               <FileUpload
                 entityType="locations"
@@ -3226,29 +3183,6 @@ const EntityForm = ({ entityType, entity, onSave, onClose, companies, locations,
                   <option key={provider.id} value={provider.id}>{provider.name}</option>
                 ))}
               </select>
-            </div>
-            <div className="form-group">
-              <label>Cabinet Logo</label>
-              <div className="avatar-section">
-                <AvatarUpload
-                  entityType="cabinets"
-                  entityId={entity?.id || 'temp'}
-                  currentAvatar={avatar}
-                  onAvatarChange={handleAvatarChange}
-                  showCustomNotification={showCustomNotification}
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Custom Avatar Editor</label>
-              <CustomAvatarEditor
-                entityType="cabinets"
-                entityId={entity?.id || 'temp'}
-                currentAvatar={avatar}
-                onAvatarChange={handleAvatarChange}
-                entityName={formData.name}
-                showCustomNotification={showCustomNotification}
-              />
             </div>
             <div className="form-group">
               <label>Cabinet Documents</label>
@@ -17797,13 +17731,6 @@ const Dashboard = () => {
         return renderDashboard();
       case 'companies':
         return renderTable('Companies', companies, [
-          { 
-            key: 'avatar', 
-            label: 'Logo',
-            render: (item) => (
-                              <AvatarDisplay entityType="companies" entityId={item.id} size={50} entityName={item.name} />
-            )
-          },
           { key: 'name', label: 'Company Name' },
           { key: 'registration_number', label: 'Registration' },
           { key: 'contact_person', label: 'Contact Person' },
