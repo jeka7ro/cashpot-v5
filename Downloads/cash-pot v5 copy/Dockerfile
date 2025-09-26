@@ -1,26 +1,26 @@
-# Use Node.js 18
-FROM node:18-alpine
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files from frontend directory
-COPY frontend/package*.json ./
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN npm ci
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code from frontend directory
-COPY frontend/ .
-
-# Build the app
-RUN npm run build
-
-# Install serve globally
-RUN npm install -g serve
+# Copy application code
+COPY . .
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8000
 
-# Start the app
-CMD ["serve", "-s", "build", "-l", "3000"]
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PORT=8000
+
+# Run the application
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
