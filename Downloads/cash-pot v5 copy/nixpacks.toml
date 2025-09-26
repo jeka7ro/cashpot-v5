@@ -1,15 +1,15 @@
 [variables]
-NIXPACKS_PROVIDERS = ["nodejs"]
-NIXPACKS_IGNORE_PATHS = ["cash-pot v5/", "deploy-687cc9f68045b4912ab57737/"]
+NIXPACKS_PROVIDERS = ["python"]
+NIXPACKS_IGNORE_PATHS = ["cash-pot v5/", "deploy-687cc9f68045b4912ab57737/", "frontend/"]
 
 [phases.setup]
-nixPkgs = ["nodejs", "npm"]
+nixPkgs = ["python311", "pip"]
 
 [phases.install]
-cmds = ["cd frontend && npm ci"]
+cmds = ["pip install -r requirements.txt"]
 
 [phases.build]
-cmds = ["cd frontend && npm run build"]
+cmds = ["echo 'Build phase complete'"]
 
 [start]
-cmd = "cd frontend && npx serve -s build -l 3000"
+cmd = "uvicorn server:app --host 0.0.0.0 --port $PORT"
